@@ -43,6 +43,9 @@ class PhenotypeProfile:
         if invalid:
             raise ValueError(f"Phenotype intensities must be within [0, 1]: {invalid}")
 
+    def to_dict(self) -> dict[str, float]:
+        return asdict(self)
+
 
 @dataclass(frozen=True)
 class ChallengeAgent:
