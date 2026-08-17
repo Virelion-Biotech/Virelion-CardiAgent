@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Virelion-Biotech/Virelion-CardiAgent/schemas/cardi-vex-handoff.schema.json",
+  "title": "Virelion CardiAgent to CardiVex Handoff",
+  "type": "object",
+  "required": ["contract_version", "challenge", "expected_observables"],
+  "properties": {
+    "contract_version": {"type": "string", "minLength": 1},
+    "challenge": {"$ref": "challenge-agent.schema.json"},
+    "expected_observables": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "minItems": 1,
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false
+}
