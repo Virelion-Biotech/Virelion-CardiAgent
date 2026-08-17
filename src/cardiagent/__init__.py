@@ -1,7 +1,8 @@
 """Virelion CardiAgent: reproducible cardiac challenge specifications."""
 
+from .benchmark import BlindBenchmark, BlindCase, build_blind_benchmark
 from .generator import ChallengeGenerator
-from .handoff import CardiVexHandoff, create_handoff
+from .handoff import BlindCardiVexHandoff, CardiVexHandoff, create_blind_handoff, create_handoff
 from .manifest import ChallengeManifest, build_manifest
 from .models import ChallengeAgent, ChallengeDomain, PhenotypeProfile
 
@@ -11,7 +12,12 @@ __all__ = [
     "PhenotypeProfile",
     "ChallengeGenerator",
     "CardiVexHandoff",
+    "BlindCardiVexHandoff",
     "create_handoff",
+    "create_blind_handoff",
     "ChallengeManifest",
     "build_manifest",
+    "BlindCase",
+    "BlindBenchmark",
+    "build_blind_benchmark",
 ]
