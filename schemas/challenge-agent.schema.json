@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Virelion-Biotech/Virelion-CardiAgent/blob/main/schemas/challenge-agent.schema.json",
+  "$id": "https://github.com/Virelion-Biotech/Virelion-CardiAgent/schemas/challenge-agent.schema.json",
   "title": "Virelion CardiAgent Challenge Instance",
   "type": "object",
   "required": ["agent_id", "domain", "version", "seed", "severity", "onset", "persistence", "heterogeneity", "phenotype", "metadata"],
@@ -17,7 +17,6 @@
       "type": "object",
       "required": ["stress", "inflammation", "electrical_instability", "contractile_impairment", "viability_loss", "oxidative_stress", "metabolic_disruption", "remodeling_signal"],
       "additionalProperties": false,
-      "patternProperties": {},
       "properties": {
         "stress": {"type": "number", "minimum": 0, "maximum": 1},
         "inflammation": {"type": "number", "minimum": 0, "maximum": 1},
