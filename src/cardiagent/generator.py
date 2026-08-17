@@ -20,14 +20,17 @@ _BASE_PROFILES: dict[ChallengeDomain, PhenotypeProfile] = {
 class ChallengeGenerator:
     """Create reproducible phenotype-level challenge agents.
 
-    This generator deliberately contains no pathogen design, sequence design,
-    culture instructions, dosing instructions, or other wet-lab operational
-    procedures. Its output is a standardized challenge representation for
-    downstream detection and benchmarking.
+    Each generator owns one seeded pseudo-random stream. Recreating a
+    generator with the same seed reproduces the same sequence, while repeated
+    calls produce distinct challenge instances.
     """
+
+    VERSION = "0.1"
 
     def __init__(self, seed: int = 0) -> None:
         self.seed = seed
+        self._rng = random.Random(seed)
+        self._counter = 0
 
     def generate(
         self,
@@ -39,12 +42,11 @@ class ChallengeGenerator:
         if not 0.0 <= severity <= 1.0:
             raise ValueError("severity must be within [0, 1]")
 
-        rng = random.Random(self.seed)
+        self._counter += 1
+        rng = self._rng
         base = _BASE_PROFILES[domain]
 
         def vary(value: float) -> float:
-            # Small deterministic variation prevents every instance in a
-            # domain from being identical while remaining bounded.
             return max(0.0, min(1.0, value * (0.9 + 0.2 * rng.random())))
 
         phenotype = replace(
@@ -60,14 +62,19 @@ class ChallengeGenerator:
         )
 
         return ChallengeAgent(
-            agent_id=agent_id or f"CA-{domain.value}-{self.seed:06d}",
+            agent_id=agent_id or f"CA-{domain.value}-{self.seed:06d}-{self._counter:04d}",
             domain=domain,
-            version="0.1",
+            version=self.VERSION,
             seed=self.seed,
             severity=severity,
             onset=rng.random(),
             persistence=rng.random(),
             heterogeneity=rng.random(),
             phenotype=phenotype,
-            metadata={"generator": "virelion-cardiagent", "representation": "phenotype-level"},
+            metadata={
+                "generator": "virelion-cardiagent",
+                "generator_version": self.VERSION,
+                "representation": "phenotype-level",
+                "sequence_index": self._counter,
+            },
         )
