@@ -12,7 +12,6 @@ usable without ML dependencies.
 
 from __future__ import annotations
 
-from dataclasses import replace
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -31,14 +30,14 @@ PHENOTYPE_FIELDS: tuple[str, ...] = (
 )
 
 LATENT_DIM = 12
-INPUT_DIM = 11  # 8 phenotype values + onset + persistence + heterogeneity
+INPUT_DIM = 11
 
 
 def _torch():
     try:
         import torch
         import torch.nn as nn
-    except ImportError as exc:  # pragma: no cover - environment dependent
+    except ImportError as exc:
         raise ImportError(
             "ML generation requires PyTorch. Install with: "
             "pip install 'virelion-cardiagent[ml]'"
@@ -58,13 +57,12 @@ def _feature_vector(agent: ChallengeAgent):
 
 
 class _ConditionalVAE:
-    """Small conditional VAE used internally by :class:`AgentGeneratorModel`."""
+    """Small conditional VAE used internally by AgentGeneratorModel."""
 
     def __init__(self, torch, nn, domain_count: int, latent_dim: int = LATENT_DIM):
         self.domain_count = domain_count
         self.latent_dim = latent_dim
-        condition_dim = domain_count + 1  # one-hot domain + severity
-
+        condition_dim = domain_count + 1
         self.encoder = nn.Sequential(
             nn.Linear(INPUT_DIM + condition_dim, 64),
             nn.ReLU(),
@@ -81,13 +79,10 @@ class _ConditionalVAE:
             nn.Linear(32, INPUT_DIM),
             nn.Sigmoid(),
         )
-
         self.torch = torch
-        self.nn = nn
 
     def parameters(self):
-        modules = [self.encoder, self.mu, self.logvar, self.decoder]
-        for module in modules:
+        for module in (self.encoder, self.mu, self.logvar, self.decoder):
             yield from module.parameters()
 
     def state_dict(self):
@@ -105,10 +100,10 @@ class _ConditionalVAE:
         self.decoder.load_state_dict(state["decoder"])
 
     def _condition(self, domain_ids, severity):
-        domain_one_hot = self.torch.nn.functional.one_hot(
+        one_hot = self.torch.nn.functional.one_hot(
             domain_ids, num_classes=self.domain_count
         ).float()
-        return self.torch.cat([domain_one_hot, severity[:, None]], dim=1)
+        return self.torch.cat([one_hot, severity[:, None]], dim=1)
 
     def encode(self, x, domain_ids, severity):
         condition = self._condition(domain_ids, severity)
@@ -122,30 +117,26 @@ class _ConditionalVAE:
     def forward(self, x, domain_ids, severity):
         mu, logvar = self.encode(x, domain_ids, severity)
         std = self.torch.exp(0.5 * logvar)
-        eps = self.torch.randn_like(std)
-        z = mu + eps * std
+        z = mu + self.torch.randn_like(std) * std
         return self.decode(z, domain_ids, severity), mu, logvar
 
 
 class AgentGeneratorModel:
     """Trainable ML model that produces new CardiAgent instances.
 
-    The model learns a distribution from a collection of safe
-    ``ChallengeAgent`` examples. Sampling is conditional on challenge domain
-    and severity, with ``difficulty`` controlling latent sampling temperature
-    and cross-domain phenotype mixing. The returned objects are ordinary
-    ``ChallengeAgent`` instances and can therefore enter the existing blinded
-    CardiVex benchmark pipeline.
+    The model learns a distribution from safe ChallengeAgent examples. Sampling
+    is conditional on domain and severity; difficulty increases latent
+    exploration and phenotype ambiguity. Returned objects enter the existing
+    blinded CardiVex benchmark pipeline unchanged.
     """
 
     VERSION = "0.3-ml-cvae"
 
     def __init__(self, *, latent_dim: int = LATENT_DIM, seed: int = 0):
         torch, nn = _torch()
-        self.torch = torch
-        self.nn = nn
-        self.seed = seed
         torch.manual_seed(seed)
+        self.torch = torch
+        self.seed = seed
         self.latent_dim = latent_dim
         self.model = _ConditionalVAE(torch, nn, len(ChallengeDomain), latent_dim)
         self.trained = False
@@ -172,13 +163,8 @@ class AgentGeneratorModel:
         x = torch.stack([_feature_vector(agent) for agent in rows])
         domains = torch.tensor([_domain_index(agent.domain) for agent in rows], dtype=torch.long)
         severity = torch.tensor([agent.severity for agent in rows], dtype=torch.float32)
-
         optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         last_loss = 0.0
-        self.model.encoder.train()
-        self.model.decoder.train()
-        self.model.mu.train()
-        self.model.logvar.train()
 
         for epoch in range(epochs):
             order = torch.randperm(len(rows))
@@ -220,20 +206,14 @@ class AgentGeneratorModel:
         torch = self.torch
         if not self.trained:
             raise RuntimeError("Train the model with .fit(...) before sampling")
-        for name, value in (("severity", severity), ("difficulty", difficulty)):
-            if not 0.0 <= value <= 1.0:
-                raise ValueError(f"{name} must be within [0, 1]")
+        if not 0.0 <= severity <= 1.0 or not 0.0 <= difficulty <= 1.0:
+            raise ValueError("severity and difficulty must be within [0, 1]")
         if count < 1:
             raise ValueError("count must be positive")
 
-        self.model.encoder.eval()
-        self.model.decoder.eval()
+        temperature = 0.65 + 0.95 * difficulty
         domain_id = torch.tensor([_domain_index(domain)] * count, dtype=torch.long)
         severity_tensor = torch.tensor([severity] * count, dtype=torch.float32)
-
-        # Higher difficulty explores farther from the learned center and
-        # slightly increases ambiguity through latent temperature.
-        temperature = 0.65 + 0.95 * difficulty
         z = torch.randn(count, self.latent_dim) * temperature
         with torch.no_grad():
             decoded = self.model.decode(z, domain_id, severity_tensor).clamp(0.0, 1.0)
@@ -289,17 +269,19 @@ class AgentGeneratorModel:
         return options[1 if difficulty >= 0.5 else 0]
 
     def save(self, path: str | Path) -> None:
-        """Save model weights and metadata."""
+        """Save model weights and training metadata."""
         if not self.trained:
             raise RuntimeError("Cannot save an untrained model")
-        payload = {
-            "version": self.VERSION,
-            "latent_dim": self.latent_dim,
-            "seed": self.seed,
-            "training_summary": self.training_summary,
-            "state_dict": self.model.state_dict(),
-        }
-        self.torch.save(payload, str(path))
+        self.torch.save(
+            {
+                "version": self.VERSION,
+                "latent_dim": self.latent_dim,
+                "seed": self.seed,
+                "training_summary": self.training_summary,
+                "state_dict": self.model.state_dict(),
+            },
+            str(path),
+        )
 
     @classmethod
     def load(cls, path: str | Path) -> "AgentGeneratorModel":
@@ -339,3 +321,31 @@ def generate_ml_agents(
         difficulty=difficulty,
         count=count,
     )
+
+
+def generate_ml_benchmark(
+    model: AgentGeneratorModel,
+    *,
+    benchmark_id: str,
+    domains: Sequence[ChallengeDomain] | None = None,
+    severity: float = 0.6,
+    difficulty: float = 0.8,
+    per_domain: int = 16,
+    seed: int = 0,
+):
+    """Generate ML-created cases and immediately package them as a blind benchmark."""
+    from .benchmark import build_blind_benchmark
+
+    selected = tuple(domains or tuple(ChallengeDomain))
+    agents: list[ChallengeAgent] = []
+    for domain in selected:
+        agents.extend(
+            model.sample(
+                domain=domain,
+                severity=severity,
+                difficulty=difficulty,
+                count=per_domain,
+                agent_id_prefix=f"ML-{domain.value}",
+            )
+        )
+    return build_blind_benchmark(agents, benchmark_id=benchmark_id, seed=seed)
