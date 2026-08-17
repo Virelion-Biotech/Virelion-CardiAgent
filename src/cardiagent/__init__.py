@@ -1,11 +1,13 @@
 """Virelion CardiAgent: reproducible cardiac challenge specifications."""
 
+from .adaptive import AdaptiveChallengeEngine, AdaptiveScore, CurriculumStage, DetectionOutcome
 from .benchmark import BlindBenchmark, BlindCase, build_blind_benchmark
 from .generator import ChallengeGenerator
 from .handoff import BlindCardiVexHandoff, CardiVexHandoff, create_blind_handoff, create_handoff
 from .manifest import ChallengeManifest, build_manifest
 from .ml import AgentGeneratorModel, generate_ml_agents, generate_ml_benchmark, train_agent_model
 from .models import ChallengeAgent, ChallengeDomain, PhenotypeProfile
+from .quality import PopulationReport, assess_population
 
 __all__ = [
     "ChallengeAgent",
@@ -25,4 +27,10 @@ __all__ = [
     "train_agent_model",
     "generate_ml_agents",
     "generate_ml_benchmark",
+    "DetectionOutcome",
+    "AdaptiveScore",
+    "CurriculumStage",
+    "AdaptiveChallengeEngine",
+    "PopulationReport",
+    "assess_population",
 ]
