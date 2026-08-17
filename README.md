@@ -7,27 +7,26 @@ CardiAgent is the upstream sibling of **Virelion-CardiVex**. Its job is to creat
 ## Architecture
 
 ```text
-CardiAgent
-   │
-   ├── challenge domain
-   ├── severity / difficulty
-   ├── temporal trajectory
-   ├── heterogeneity
-   ├── phenotype overlap
-   ├── observation noise / partial observation
-   └── phenotype-level response profile
-          │
-          ▼
-   Detailed Challenge Agent
-          │
-          ├────────────── trusted handoff ──────────────► CardiVex
-          │
-          └────────────── blind handoff ─────────────────► CardiVex
-                                                           │
-                                                   independent call
-                                                           │
-                                             detected / partially detected
-                                                   / not detected
+                         CardiAgent
+                            │
+                 ┌──────────┴──────────┐
+                 │                     │
+        deterministic prior      ML agent model
+                 │                     │
+                 └──────────┬──────────┘
+                            ▼
+                   Detailed Challenge Agent
+                            │
+                 ┌──────────┴──────────┐
+                 │                     │
+          trusted handoff        blind handoff
+                 │                     │
+                 ▼                     ▼
+             CardiVex              CardiVex
+                                      │
+                               independent call
+                                      │
+                         detected / partial / missed
 ```
 
 The boundary is intentional: **CardiAgent specifies the challenge; CardiVex independently evaluates the observable cardiac response.**
@@ -48,7 +47,74 @@ CardiAgent does more than sample one static phenotype vector. Each generated age
 - explicit confounder tags
 - scenario-family and generator version metadata
 
-The generator is deterministic for a given seed and call sequence, so difficult cases can be reproduced exactly for debugging and benchmarking.
+The deterministic generator is the safe prior and benchmark baseline. The ML layer learns distributions from these phenotype-level agents and produces **new sampled agents**, rather than simply replaying the training examples.
+
+## ML agent generator
+
+The package includes `AgentGeneratorModel`, a conditional variational autoencoder (CVAE) implemented with optional PyTorch. It learns the distribution of phenotype-level `ChallengeAgent` examples conditioned on challenge domain and severity.
+
+The model can:
+
+1. train on a corpus of existing `ChallengeAgent` instances;
+2. learn latent variation across phenotype, onset, persistence, and heterogeneity;
+3. sample new agents from the learned distribution;
+4. increase latent sampling temperature as benchmark difficulty increases;
+5. mark generated cases as `ml_generated` with model provenance;
+6. directly package ML-generated cases into a blinded CardiVex benchmark.
+
+Install the optional ML dependency with:
+
+```bash
+pip install -e '.[ml]'
+```
+
+Example:
+
+```python
+from cardiagent import (
+    ChallengeDomain,
+    ChallengeGenerator,
+    AgentGeneratorModel,
+    generate_ml_benchmark,
+)
+
+# Build a safe phenotype-level training corpus.
+generator = ChallengeGenerator(seed=7)
+training_agents = [
+    generator.generate(domain, severity=severity, difficulty=difficulty)
+    for domain in ChallengeDomain
+    for severity in (0.2, 0.4, 0.6, 0.8)
+    for difficulty in (0.3, 0.6, 0.9)
+]
+
+# Learn the challenge distribution.
+model = AgentGeneratorModel(seed=11).fit(
+    training_agents,
+    epochs=250,
+)
+
+# Produce novel ML-generated cases.
+new_cases = model.sample(
+    domain=ChallengeDomain.INFLAMMATORY,
+    severity=0.75,
+    difficulty=0.95,
+    count=32,
+)
+
+# Or generate all domains and package them directly for blind CardiVex evaluation.
+benchmark = generate_ml_benchmark(
+    model,
+    benchmark_id="ml-stress-test-001",
+    difficulty=0.95,
+    per_domain=32,
+)
+
+print(benchmark.public_json())
+```
+
+The resulting objects are ordinary `ChallengeAgent` instances, so they use the same CardiVex handoff and blinded benchmark contracts as deterministic cases.
+
+The ML model operates only over abstract phenotype-level features. It does not generate pathogen sequences, biological construction instructions, wet-lab protocols, culture conditions, doses, or other operational parameters.
 
 ## Initial challenge domains
 
@@ -60,7 +126,7 @@ The generator is deterministic for a given seed and call sequence, so difficult 
 - metabolic
 - genetic susceptibility
 
-These are phenotype-level categories. The repository does not implement pathogen construction, sequence design, wet-lab protocols, culture conditions, dosing instructions, or other operational biological procedures.
+These are phenotype-level categories.
 
 ## Blind benchmarking
 
@@ -75,45 +141,23 @@ challenge truth
      │
      ├──► blinded presentation ──► CardiVex ──► prediction
      │                                      │
-     └──────────── private truth ───────────┴──► scoring
+     └──────── private truth ───────────────┴──► scoring
 ```
 
 CardiAgent therefore does **not** decide whether a challenge is detectable. It creates the challenge and preserves the ground truth so CardiVex can be tested independently.
 
-## Example
+## Deterministic example
 
 ```python
-from cardiagent import (
-    ChallengeDomain,
-    ChallengeGenerator,
-    build_blind_benchmark,
-    create_blind_handoff,
-)
+from cardiagent import ChallengeDomain, ChallengeGenerator, build_blind_benchmark
 
 generator = ChallengeGenerator(seed=42)
 challenges = [
-    generator.generate(
-        ChallengeDomain.ISCHEMIC,
-        severity=0.7,
-        difficulty=0.85,
-    ),
-    generator.generate(
-        ChallengeDomain.INFLAMMATORY,
-        severity=0.45,
-        difficulty=0.75,
-    ),
+    generator.generate(ChallengeDomain.ISCHEMIC, severity=0.7, difficulty=0.85),
+    generator.generate(ChallengeDomain.INFLAMMATORY, severity=0.45, difficulty=0.75),
 ]
 
-# One-case blind handoff for CardiVex.
-blind = create_blind_handoff(challenges[0], case_id="bench-0001")
-print(blind.to_json())
-
-# Reproducible multi-case benchmark with private ground truth.
-benchmark = build_blind_benchmark(
-    challenges,
-    benchmark_id="demo-001",
-    seed=42,
-)
+benchmark = build_blind_benchmark(challenges, benchmark_id="demo-001", seed=42)
 print(benchmark.public_json())
 print(benchmark.evaluation_json())
 ```
@@ -133,8 +177,9 @@ The **blind handoff** supplies only the challenge presentation required for inde
 5. **Manifested challenge sets** — batches retain order, identity, seed, and generator version.
 6. **Blinded evaluation** — CardiVex can be evaluated without receiving the domain label.
 7. **Controlled difficulty** — overlap, heterogeneity, noise, and temporal behavior can make cases progressively harder.
-8. **Benchmarkability** — challenge instances support detection and characterization benchmarks.
-9. **Safe abstraction boundary** — no operational biological construction parameters are generated.
+8. **ML sampling** — a learned latent distribution can produce novel challenge agents for stress testing.
+9. **Benchmarkability** — challenge instances support detection and characterization benchmarks.
+10. **Safe abstraction boundary** — no operational biological construction parameters are generated.
 
 ## Package
 
@@ -144,6 +189,9 @@ The Python package defines:
 - `PhenotypeProfile` — normalized host-observable feature vector.
 - `ChallengeAgent` — complete serializable challenge instance.
 - `ChallengeGenerator` — deterministic detailed scenario generator.
+- `AgentGeneratorModel` — conditional VAE for learned challenge-agent generation.
+- `train_agent_model` / `generate_ml_agents` — ML training and sampling helpers.
+- `generate_ml_benchmark` — ML generation directly into a blind benchmark.
 - `CardiVexHandoff` / `create_handoff` — trusted downstream envelope.
 - `BlindCardiVexHandoff` / `create_blind_handoff` — detection-only envelope.
 - `ChallengeManifest` / `build_manifest` — reproducible batch container.
@@ -151,10 +199,9 @@ The Python package defines:
 
 ## Roadmap
 
-- Formal contract compatibility and schema validation
 - richer controlled scenario families
 - independent CardiVex observation/result schema
 - blinded detection/characterization benchmark protocol
 - provenance and audit metadata
 - automated schema validation and CI
-- AI-assisted challenge sampling and benchmark analysis
+- stronger learned challenge distributions as real phenotype-level training data become available
