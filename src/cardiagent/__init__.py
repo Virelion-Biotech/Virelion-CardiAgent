@@ -8,6 +8,7 @@ from .literature import LITERATURE_ARCHETYPES, LiteratureArchetype, archetypes_b
 from .manifest import ChallengeManifest, build_manifest
 from .ml import AgentGeneratorModel, generate_ml_agents, generate_ml_benchmark, train_agent_model
 from .models import ChallengeAgent, ChallengeDomain, PhenotypeProfile
+from .pathogens import PATHOGEN_PHENOTYPES, PathogenClass, PathogenPhenotype, get_pathogen_phenotype, pathogen_phenotypes
 from .quality import PopulationReport, assess_population
 
 __all__ = [
@@ -18,4 +19,5 @@ __all__ = [
     "DetectionOutcome", "AdaptiveScore", "CurriculumStage", "AdaptiveChallengeEngine",
     "PopulationReport", "assess_population",
     "LiteratureArchetype", "LITERATURE_ARCHETYPES", "archetypes_by_domain", "get_archetype",
+    "PathogenClass", "PathogenPhenotype", "PATHOGEN_PHENOTYPES", "pathogen_phenotypes", "get_pathogen_phenotype",
 ]
