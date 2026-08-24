@@ -16,6 +16,7 @@ def test_calibration_reports_expected_control_means() -> None:
     assert summary.difficulty_mean == pytest.approx(0.5)
     assert 0.0 <= summary.severity_phenotype_mae <= 1.0
     assert 0.0 <= summary.difficulty_overlap_mae <= 1.0
+    assert 0.0 <= summary.realized_phenotype_mean <= 1.0
 
 
 def test_empty_calibration_rejected() -> None:
