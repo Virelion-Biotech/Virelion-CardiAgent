@@ -1,7 +1,8 @@
 """Virelion CardiAgent: reproducible cardiac challenge specifications."""
 
 from .adaptive import AdaptiveChallengeEngine, AdaptiveScore, CurriculumStage, DetectionOutcome
-from .benchmark import BlindBenchmark, BlindCase, build_blind_benchmark
+from .benchmark import BlindBenchmark, BlindCase, audit_blind_presentation, build_blind_benchmark
+from .evaluation import PopulationMetrics, conditional_domain_fidelity, phenotype_mae, population_metrics
 from .generator import ChallengeGenerator
 from .handoff import BlindCardiVexHandoff, CardiVexHandoff, create_blind_handoff, create_handoff
 from .literature import LITERATURE_ARCHETYPES, LiteratureArchetype, archetypes_by_domain, get_archetype
@@ -10,14 +11,17 @@ from .ml import AgentGeneratorModel, generate_ml_agents, generate_ml_benchmark, 
 from .models import ChallengeAgent, ChallengeDomain, PhenotypeProfile
 from .pathogens import PATHOGEN_PHENOTYPES, PathogenClass, PathogenPhenotype, get_pathogen_phenotype, pathogen_phenotypes
 from .quality import PopulationReport, assess_population
+from .suites import BenchmarkSuite, available_suites, baseline_suite, build_suite, difficulty_suite, overlap_suite, severity_suite
 
 __all__ = [
     "ChallengeAgent", "ChallengeDomain", "PhenotypeProfile", "ChallengeGenerator",
     "CardiVexHandoff", "BlindCardiVexHandoff", "create_handoff", "create_blind_handoff",
-    "ChallengeManifest", "build_manifest", "BlindCase", "BlindBenchmark", "build_blind_benchmark",
+    "ChallengeManifest", "build_manifest", "BlindCase", "BlindBenchmark", "build_blind_benchmark", "audit_blind_presentation",
     "AgentGeneratorModel", "train_agent_model", "generate_ml_agents", "generate_ml_benchmark",
     "DetectionOutcome", "AdaptiveScore", "CurriculumStage", "AdaptiveChallengeEngine",
     "PopulationReport", "assess_population",
+    "PopulationMetrics", "population_metrics", "phenotype_mae", "conditional_domain_fidelity",
+    "BenchmarkSuite", "baseline_suite", "difficulty_suite", "severity_suite", "overlap_suite", "build_suite", "available_suites",
     "LiteratureArchetype", "LITERATURE_ARCHETYPES", "archetypes_by_domain", "get_archetype",
     "PathogenClass", "PathogenPhenotype", "PATHOGEN_PHENOTYPES", "pathogen_phenotypes", "get_pathogen_phenotype",
 ]
