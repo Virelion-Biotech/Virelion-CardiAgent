@@ -15,6 +15,7 @@ from .models import ChallengeAgent, ChallengeDomain
 
 
 SUITE_VERSION = "0.1"
+_DEFAULT_SEEDS = {"baseline": 100, "difficulty": 200, "severity": 300, "overlap": 400}
 
 
 @dataclass(frozen=True)
@@ -66,52 +67,24 @@ def _generate_grid(seed: int, severities: tuple[float, ...], difficulties: tuple
 
 def baseline_suite(seed: int = 100) -> BenchmarkSuite:
     """Balanced low/moderate/high severity baseline population."""
-    return BenchmarkSuite(
-        name="baseline",
-        version=SUITE_VERSION,
-        seed=seed,
-        challenges=tuple(_generate_grid(seed, (0.2, 0.5, 0.8), (0.2, 0.5))),
-        intent="broad regression coverage across all supported domains",
-    )
+    return BenchmarkSuite("baseline", SUITE_VERSION, seed, tuple(_generate_grid(seed, (0.2, 0.5, 0.8), (0.2, 0.5))), "broad regression coverage across all supported domains")
 
 
 def difficulty_suite(seed: int = 200) -> BenchmarkSuite:
     """Hold severity approximately fixed while increasing ambiguity."""
-    return BenchmarkSuite(
-        name="difficulty",
-        version=SUITE_VERSION,
-        seed=seed,
-        challenges=tuple(_generate_grid(seed, (0.6,), (0.1, 0.4, 0.7, 0.95))),
-        intent="stress-test overlap, noise, missingness and heterogeneity",
-    )
+    return BenchmarkSuite("difficulty", SUITE_VERSION, seed, tuple(_generate_grid(seed, (0.6,), (0.1, 0.4, 0.7, 0.95))), "stress-test overlap, noise, missingness and heterogeneity")
 
 
 def severity_suite(seed: int = 300) -> BenchmarkSuite:
     """Evaluate behavior from subtle to severe challenge presentations."""
-    return BenchmarkSuite(
-        name="severity",
-        version=SUITE_VERSION,
-        seed=seed,
-        challenges=tuple(_generate_grid(seed, (0.1, 0.3, 0.5, 0.7, 0.9), (0.4,))),
-        intent="evaluate severity calibration and sensitivity",
-    )
+    return BenchmarkSuite("severity", SUITE_VERSION, seed, tuple(_generate_grid(seed, (0.1, 0.3, 0.5, 0.7, 0.9), (0.4,))), "evaluate severity calibration and sensitivity")
 
 
 def overlap_suite(seed: int = 400) -> BenchmarkSuite:
     """Concentrate on high-overlap, difficult phenotype presentations."""
     suite = difficulty_suite(seed)
-    selected = tuple(
-        challenge
-        for challenge in suite.challenges
-        if float(challenge.metadata.get("phenotype_overlap", 0.0)) >= 0.60
-    )
-    return BenchmarkSuite(
-        name="overlap",
-        version=SUITE_VERSION,
-        seed=seed,
-        challenges=selected,
-        intent="evaluate domain ambiguity and cross-domain phenotype overlap",
-    )
+    selected = tuple(challenge for challenge in suite.challenges if float(challenge.metadata.get("phenotype_overlap", 0.0)) >= 0.60)
+    return BenchmarkSuite("overlap", SUITE_VERSION, seed, selected, "evaluate domain ambiguity and cross-domain phenotype overlap")
 
 
 SUITE_BUILDERS: dict[str, Callable[[int], BenchmarkSuite]] = {
@@ -124,11 +97,9 @@ SUITE_BUILDERS: dict[str, Callable[[int], BenchmarkSuite]] = {
 
 def build_suite(name: str, *, seed: int | None = None) -> BenchmarkSuite:
     """Build one named suite; unknown names fail loudly."""
-    try:
-        builder = SUITE_BUILDERS[name]
-    except KeyError as exc:
-        raise KeyError(f"Unknown benchmark suite: {name}; choose from {sorted(SUITE_BUILDERS)}") from exc
-    return builder(seed) if seed is not None else builder(builder.__defaults__[0])  # type: ignore[index]
+    if name not in SUITE_BUILDERS:
+        raise KeyError(f"Unknown benchmark suite: {name}; choose from {sorted(SUITE_BUILDERS)}")
+    return SUITE_BUILDERS[name](seed if seed is not None else _DEFAULT_SEEDS[name])
 
 
 def available_suites() -> tuple[str, ...]:
