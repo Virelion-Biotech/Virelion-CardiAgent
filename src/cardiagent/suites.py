@@ -67,8 +67,7 @@ def _generate_grid(seed: int, severities: tuple[float, ...], difficulties: tuple
         for severity in severities:
             for difficulty in difficulties:
                 counter += 1
-                generator = ChallengeGenerator(seed=seed + counter)
-                challenge = generator.generate(
+                challenge = ChallengeGenerator(seed=seed + counter).generate(
                     domain,
                     severity=severity,
                     difficulty=difficulty,
@@ -106,34 +105,38 @@ def overlap_suite(seed: int = 400) -> BenchmarkSuite:
 
 
 def temporal_suite(seed: int = 500) -> BenchmarkSuite:
-    """Cover early, intermediate and persistent temporal presentations."""
+    """Cover the generator's naturally sampled early-to-persistent trajectories."""
     challenges: list[ChallengeAgent] = []
     counter = 0
     for domain in ChallengeDomain:
-        for onset, persistence in ((0.05, 0.20), (0.30, 0.50), (0.70, 0.90)):
+        for difficulty in (0.1, 0.5, 0.9):
             counter += 1
             challenge = ChallengeGenerator(seed=seed + counter).generate(
-                domain, severity=0.6, difficulty=0.6, agent_id=f"suite-{seed}-{counter:04d}"
+                domain, severity=0.6, difficulty=difficulty, agent_id=f"suite-{seed}-{counter:04d}"
             )
-            challenge = _with_metadata(challenge, requested_domain=domain.value, requested_onset=onset, requested_persistence=persistence, temporal_target=f"onset={onset:.2f};persistence={persistence:.2f}")
-            challenges.append(challenge)
-    return BenchmarkSuite("temporal", SUITE_VERSION, seed, tuple(challenges), "test temporal diversity and conditioning")
+            challenges.append(_with_metadata(
+                challenge,
+                requested_domain=domain.value,
+                requested_difficulty=difficulty,
+                temporal_regime=("low_ambiguity" if difficulty < 0.3 else "moderate_ambiguity" if difficulty < 0.8 else "high_ambiguity"),
+            ))
+    return BenchmarkSuite("temporal", SUITE_VERSION, seed, tuple(challenges), "test temporal trajectories under increasing observational ambiguity")
 
 
 def heterogeneity_suite(seed: int = 600) -> BenchmarkSuite:
-    """Test homogeneous through highly heterogeneous populations."""
+    """Test homogeneous through highly heterogeneous presentations."""
     challenges: list[ChallengeAgent] = []
     counter = 0
     for domain in ChallengeDomain:
-        for heterogeneity in (0.05, 0.35, 0.65, 0.90):
+        for difficulty in (0.05, 0.35, 0.65, 0.90):
             counter += 1
-            challenge = ChallengeGenerator(seed=seed + counter).generate(domain, severity=0.6, difficulty=0.7, agent_id=f"suite-{seed}-{counter:04d}")
-            challenges.append(_with_metadata(challenge, requested_domain=domain.value, requested_heterogeneity=heterogeneity))
-    return BenchmarkSuite("heterogeneity", SUITE_VERSION, seed, tuple(challenges), "test robustness to biological presentation heterogeneity")
+            challenge = ChallengeGenerator(seed=seed + counter).generate(domain, severity=0.6, difficulty=difficulty, agent_id=f"suite-{seed}-{counter:04d}")
+            challenges.append(_with_metadata(challenge, requested_domain=domain.value, requested_difficulty=difficulty))
+    return BenchmarkSuite("heterogeneity", SUITE_VERSION, seed, tuple(challenges), "test robustness to presentation heterogeneity")
 
 
 def partial_observation_suite(seed: int = 700) -> BenchmarkSuite:
-    """Stress-test cases with intentionally incomplete observable phenotypes."""
+    """Stress-test cases whose generated metadata indicates incomplete observables."""
     challenges = _generate_grid(seed, (0.3, 0.6, 0.9), (0.7, 0.95))
     return BenchmarkSuite("partial_observation", SUITE_VERSION, seed, tuple(_with_metadata(c, observation_regime="partial") for c in challenges), "test robustness to missing or noisy observables")
 
