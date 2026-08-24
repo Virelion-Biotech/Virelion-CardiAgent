@@ -32,6 +32,10 @@ def _mean(values: list[float]) -> float:
     return mean(values) if values else 0.0
 
 
+def _phenotype_mean(agent: ChallengeAgent) -> float:
+    return _mean([float(value) for value in agent.phenotype.to_dict().values()])
+
+
 def summarize_calibration(challenges: Iterable[ChallengeAgent]) -> CalibrationSummary:
     """Measure whether requested controls are reflected in generated outputs."""
     items = list(challenges)
@@ -39,7 +43,7 @@ def summarize_calibration(challenges: Iterable[ChallengeAgent]) -> CalibrationSu
         raise ValueError("At least one challenge is required")
 
     severity = [float(item.severity) for item in items]
-    phenotype = [float(item.phenotype.mean()) for item in items]
+    phenotype = [_phenotype_mean(item) for item in items]
     difficulty = [float(item.metadata.get("difficulty", item.severity)) for item in items]
     overlap = [float(item.metadata.get("phenotype_overlap", 0.0)) for item in items]
     noise = [float(item.metadata.get("measurement_noise", 0.0)) for item in items]
