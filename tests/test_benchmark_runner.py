@@ -11,11 +11,13 @@ def test_runner_is_reproducible_except_timestamp() -> None:
     assert first["seed"] == second["seed"]
     assert first["case_count"] == second["case_count"]
     assert first["report"]["metrics"] == second["report"]["metrics"]
+    assert first["report"]["calibration"] == second["report"]["calibration"]
     assert first["report"]["quality_score"] == second["report"]["quality_score"]
+    assert first["report"]["acceptance"] == second["report"]["acceptance"]
 
 
 def test_runner_persists_report_and_cases(tmp_path: Path) -> None:
-    run_benchmark(suite_name="severity", seed=42, output_dir=tmp_path)
+    run_benchmark(suite_name="severity", seed=42, output_dir=tmp_path, enforce_acceptance=True)
     assert (tmp_path / "severity.report.json").exists()
     assert (tmp_path / "severity.cases.jsonl").exists()
     assert (tmp_path / "severity.cases.jsonl").read_text(encoding="utf-8").strip()
