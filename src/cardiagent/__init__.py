@@ -17,8 +17,8 @@ from .evaluation import (
 from .generator import ChallengeGenerator
 from .handoff import BlindCardiVexHandoff, CardiVexHandoff, create_blind_handoff, create_handoff
 from .literature import LITERATURE_ARCHETYPES, LiteratureArchetype, archetypes_by_domain, get_archetype
-from .manifest import ChallengeManifest, build_manifest
 from .ml import AgentGeneratorModel, generate_ml_agents, generate_ml_benchmark, train_agent_model
+from .model_comparison import GeneratorComparison, build_matched_ml_population, build_reference_population, compare_populations
 from .models import ChallengeAgent, ChallengeDomain, PhenotypeProfile
 from .pathogens import PATHOGEN_PHENOTYPES, PathogenClass, PathogenPhenotype, get_pathogen_phenotype, pathogen_phenotypes
 from .quality import PopulationReport, assess_population
@@ -41,6 +41,7 @@ __all__ = [
     "CardiVexHandoff", "BlindCardiVexHandoff", "create_handoff", "create_blind_handoff",
     "ChallengeManifest", "build_manifest", "BlindCase", "BlindBenchmark", "build_blind_benchmark", "audit_blind_presentation",
     "AgentGeneratorModel", "train_agent_model", "generate_ml_agents", "generate_ml_benchmark",
+    "GeneratorComparison", "compare_populations", "build_reference_population", "build_matched_ml_population",
     "DetectionOutcome", "AdaptiveScore", "CurriculumStage", "AdaptiveChallengeEngine",
     "PopulationReport", "assess_population",
     "PopulationMetrics", "population_metrics", "phenotype_mae", "conditional_domain_fidelity",
