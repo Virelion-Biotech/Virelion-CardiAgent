@@ -23,7 +23,8 @@ def test_runner_persists_report_and_cases(tmp_path: Path) -> None:
     assert (tmp_path / "severity.cases.jsonl").read_text(encoding="utf-8").strip()
 
 
-def test_all_registered_suites_run() -> None:
-    results = run_all_benchmarks()
+def test_all_registered_suites_run_with_acceptance() -> None:
+    results = run_all_benchmarks(enforce_acceptance=True)
     assert {result["suite"] for result in results} == set(available_suites())
     assert all(int(result["case_count"]) > 0 for result in results)
+    assert all(all(result["report"]["acceptance"].values()) for result in results)
