@@ -36,3 +36,5 @@ jobs:
         run: python -m pip install -e ".[all]"
       - name: Run ML tests
         run: python -m pytest -q tests/test_ml.py
+      - name: Run full pipeline integration test
+        run: python -m pytest -q tests/test_full_pipeline.py
