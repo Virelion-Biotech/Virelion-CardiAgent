@@ -33,12 +33,7 @@ def _mean(values: list[float]) -> float:
 
 
 def summarize_calibration(challenges: Iterable[ChallengeAgent]) -> CalibrationSummary:
-    """Measure whether requested severity/difficulty are reflected in outputs.
-
-    These are diagnostics, not claims of biological truth. They test the
-    generator's internal contract: changing a requested control should change
-    the corresponding realized observable in a predictable direction.
-    """
+    """Measure whether requested controls are reflected in generated outputs."""
     items = list(challenges)
     if not items:
         raise ValueError("At least one challenge is required")
@@ -50,6 +45,10 @@ def summarize_calibration(challenges: Iterable[ChallengeAgent]) -> CalibrationSu
     noise = [float(item.metadata.get("measurement_noise", 0.0)) for item in items]
     missingness = [float(item.metadata.get("partial_observation_rate", 0.0)) for item in items]
 
+    expected_overlap = [(x - 0.15) / 0.65 for x in overlap]
+    expected_noise = [(x - 0.05) / 0.35 for x in noise]
+    expected_missingness = [(x - 0.02) / 0.16 for x in missingness]
+
     return CalibrationSummary(
         count=len(items),
         requested_severity_mean=_mean(severity),
@@ -59,9 +58,9 @@ def summarize_calibration(challenges: Iterable[ChallengeAgent]) -> CalibrationSu
         overlap_mean=_mean(overlap),
         noise_mean=_mean(noise),
         missingness_mean=_mean(missingness),
-        difficulty_overlap_mae=_mean([abs(a - b) for a, b in zip(difficulty, [(x - 0.15) / 0.65 for x in overlap])]),
-        difficulty_noise_mae=_mean([abs(a - b) for a, b in zip(difficulty, [(x - 0.05) / 0.35 for x in noise])]),
-        difficulty_missingness_mae=_mean([abs(a - b) for a, b in zip(difficulty, [(x - 0.02) / 0.16 for x in missingness)]),
+        difficulty_overlap_mae=_mean([abs(a - b) for a, b in zip(difficulty, expected_overlap)]),
+        difficulty_noise_mae=_mean([abs(a - b) for a, b in zip(difficulty, expected_noise)]),
+        difficulty_missingness_mae=_mean([abs(a - b) for a, b in zip(difficulty, expected_missingness)]),
         severity_dispersion=pstdev(severity) if len(severity) > 1 else 0.0,
     )
 
