@@ -10,9 +10,10 @@ from typing import Sequence
 from .ml import AgentGeneratorModel
 from .model_comparison import build_matched_ml_population, build_reference_population, compare_populations
 from .models import ChallengeAgent
+from .statistics import PairedEffect, paired_effect
 
 
-EXPERIMENT_VERSION = "0.1"
+EXPERIMENT_VERSION = "0.2"
 
 
 @dataclass(frozen=True)
@@ -37,6 +38,7 @@ class MultiSeedExperiment:
     candidate_diversity_gain: MetricSummary
     severity_mean_distance: MetricSummary
     difficulty_mean_distance: MetricSummary
+    diversity_gain_effect: PairedEffect
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -110,4 +112,5 @@ def run_multi_seed_experiment(
         candidate_diversity_gain=_summary(diversity_gain),
         severity_mean_distance=_summary(severity_distance),
         difficulty_mean_distance=_summary(difficulty_distance),
+        diversity_gain_effect=paired_effect(diversity_gain),
     )
