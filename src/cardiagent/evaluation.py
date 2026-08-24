@@ -72,12 +72,7 @@ def _std(values: Sequence[float]) -> float:
 
 
 def population_metrics(challenges: Iterable[ChallengeAgent]) -> PopulationMetrics:
-    """Calculate reproducible quality metrics for a challenge population.
-
-    ``domain_balance`` is one for a perfectly even distribution and approaches
-    zero as the population collapses onto one domain. ``domain_coverage`` is
-    the fraction of the seven supported domains represented.
-    """
+    """Calculate reproducible quality metrics for a challenge population."""
     items = list(challenges)
     if not items:
         raise ValueError("At least one challenge is required")
@@ -87,7 +82,6 @@ def population_metrics(challenges: Iterable[ChallengeAgent]) -> PopulationMetric
         domain_counts[challenge.domain] += 1
 
     nonzero = [count for count in domain_counts.values() if count]
-    max_count = max(domain_counts.values())
     ideal = len(items) / len(domain_counts)
     imbalance = mean(abs(count - ideal) for count in domain_counts.values()) / max(ideal, 1.0)
 
@@ -131,14 +125,65 @@ def phenotype_mae(reference: Iterable[ChallengeAgent], candidate: Iterable[Chall
 
 
 def conditional_domain_fidelity(challenges: Iterable[ChallengeAgent]) -> float:
-    """Measure whether generated cases span all requested domains.
-
-    This metric intentionally does not assess biological correctness; it only
-    checks that the conditional generator actually honored its domain target.
-    """
+    """Measure whether generated cases honored their requested domain."""
     items = list(challenges)
     if not items:
         raise ValueError("At least one challenge is required")
     requested = [challenge.metadata.get("requested_domain", challenge.domain.value) for challenge in items]
     matches = sum(request == challenge.domain.value for request, challenge in zip(requested, items))
     return matches / len(items)
+
+
+def conditional_numeric_fidelity(
+    challenges: Iterable[ChallengeAgent],
+    field: str,
+    *,
+    tolerance: float = 0.10,
+) -> float:
+    """Fraction of cases whose generated numeric target is within tolerance.
+
+    The requested target is read from ``metadata["requested_<field>"]``. This
+    gives conditional generators a simple, model-agnostic calibration metric.
+    """
+    if tolerance < 0:
+        raise ValueError("tolerance must be non-negative")
+    items = list(challenges)
+    if not items:
+        raise ValueError("At least one challenge is required")
+    if field not in {"severity", "onset", "persistence", "heterogeneity"}:
+        raise ValueError(f"Unsupported conditional field: {field}")
+    target_key = f"requested_{field}"
+    comparable = [item for item in items if target_key in item.metadata]
+    if not comparable:
+        raise ValueError(f"No challenges contain metadata['{target_key}']")
+    matches = sum(abs(float(getattr(item, field)) - float(item.metadata[target_key])) <= tolerance for item in comparable)
+    return matches / len(comparable)
+
+
+def pairwise_overlap_rate(challenges: Iterable[ChallengeAgent], *, threshold: float = 0.60) -> float:
+    """Fraction of pairs whose normalized phenotype distance is below threshold."""
+    if threshold < 0:
+        raise ValueError("threshold must be non-negative")
+    items = list(challenges)
+    if len(items) < 2:
+        return 0.0
+    pairs = 0
+    overlapping = 0
+    for index, left in enumerate(items):
+        for right in items[index + 1 :]:
+            pairs += 1
+            if _distance(left, right) <= threshold:
+                overlapping += 1
+    return overlapping / pairs
+
+
+def quality_score(metrics: PopulationMetrics) -> float:
+    """Combine independent population metrics into a bounded QC score.
+
+    This score is deliberately descriptive rather than a claim of biological
+    validity. It rewards coverage, balance, diversity and uniqueness while
+    penalizing duplicate-heavy populations.
+    """
+    diversity = min(1.0, metrics.phenotype_diversity / 0.30)
+    uniqueness = 1.0 - metrics.duplicate_rate
+    return max(0.0, min(1.0, 0.25 * metrics.domain_coverage + 0.20 * metrics.domain_balance + 0.30 * diversity + 0.25 * uniqueness))
