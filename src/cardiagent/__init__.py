@@ -15,6 +15,7 @@ from .evaluation import (
     quality_score,
 )
 from .experiment import MetricSummary, MultiSeedExperiment, run_multi_seed_experiment
+from .experiment_artifact import ARTIFACT_VERSION, experiment_fingerprint, run_and_write_experiment
 from .generator import ChallengeGenerator
 from .handoff import BlindCardiVexHandoff, CardiVexHandoff, create_blind_handoff, create_handoff
 from .literature import LITERATURE_ARCHETYPES, LiteratureArchetype, archetypes_by_domain, get_archetype
@@ -44,6 +45,7 @@ __all__ = [
     "AgentGeneratorModel", "train_agent_model", "generate_ml_agents", "generate_ml_benchmark",
     "GeneratorComparison", "compare_populations", "build_reference_population", "build_matched_ml_population",
     "MetricSummary", "MultiSeedExperiment", "run_multi_seed_experiment",
+    "ARTIFACT_VERSION", "experiment_fingerprint", "run_and_write_experiment",
     "DetectionOutcome", "AdaptiveScore", "CurriculumStage", "AdaptiveChallengeEngine",
     "PopulationReport", "assess_population",
     "PopulationMetrics", "population_metrics", "phenotype_mae", "conditional_domain_fidelity",
