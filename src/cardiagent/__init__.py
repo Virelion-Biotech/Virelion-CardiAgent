@@ -3,6 +3,7 @@
 from .adaptive import AdaptiveChallengeEngine, AdaptiveScore, CurriculumStage, DetectionOutcome
 from .benchmark import BlindBenchmark, BlindCase, audit_blind_presentation, build_blind_benchmark
 from .benchmark_report import BenchmarkReport, build_report, write_report
+from .benchmark_runner import run_all_benchmarks, run_benchmark
 from .evaluation import (
     PopulationMetrics,
     conditional_domain_fidelity,
@@ -43,7 +44,7 @@ __all__ = [
     "PopulationReport", "assess_population",
     "PopulationMetrics", "population_metrics", "phenotype_mae", "conditional_domain_fidelity",
     "conditional_numeric_fidelity", "pairwise_overlap_rate", "quality_score",
-    "BenchmarkReport", "build_report", "write_report",
+    "BenchmarkReport", "build_report", "write_report", "run_benchmark", "run_all_benchmarks",
     "BenchmarkSuite", "baseline_suite", "difficulty_suite", "severity_suite", "overlap_suite",
     "temporal_suite", "heterogeneity_suite", "partial_observation_suite", "ood_suite",
     "build_suite", "available_suites",
