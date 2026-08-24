@@ -9,11 +9,11 @@ from dataclasses import dataclass
 from typing import Any
 import json
 
-from .benchmark import _presentation
+from .benchmark import _presentation, opaque_case_id
 from .models import ChallengeAgent
 
 
-HANDOFF_VERSION = "0.2"
+HANDOFF_VERSION = "0.3"
 
 
 @dataclass(frozen=True)
@@ -74,9 +74,14 @@ def create_blind_handoff(
     *,
     case_id: str | None = None,
 ) -> BlindCardiVexHandoff:
-    """Create a detection benchmark handoff with truth fields withheld."""
+    """Create a detection benchmark handoff with truth fields withheld.
+
+    When no case ID is supplied, a stable content hash is used instead of the
+    generator's domain-coded agent ID. This prevents accidental label leakage
+    through identifiers such as ``CA-inflammatory-...``.
+    """
     return BlindCardiVexHandoff(
         contract_version=f"{HANDOFF_VERSION}-blind",
-        case_id=case_id or challenge.agent_id,
+        case_id=case_id or opaque_case_id(challenge),
         presentation=_presentation(challenge),
     )
