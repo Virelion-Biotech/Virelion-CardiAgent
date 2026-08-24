@@ -1,10 +1,4 @@
-"""Reproducible benchmark reporting for CardiAgent.
-
-This module turns deterministic benchmark suites into machine-readable reports
-without depending on downstream CardiVex internals. It deliberately separates
-suite construction from evaluation so reports can be regenerated from a fixed
-suite version and seed.
-"""
+"""Reproducible benchmark reporting for CardiAgent."""
 
 from __future__ import annotations
 
@@ -20,7 +14,7 @@ from .models import ChallengeAgent
 from .quality import assess_population
 
 
-REPORT_VERSION = "0.2"
+REPORT_VERSION = "0.3"
 
 
 @dataclass(frozen=True)
@@ -45,6 +39,8 @@ class BenchmarkReport:
 def evaluate_acceptance(
     metrics: PopulationMetrics,
     calibration: CalibrationSummary,
+    domain_fidelity: float,
+    quality_score: float,
     *,
     min_quality_score: float = 0.55,
     min_domain_fidelity: float = 0.99,
@@ -52,12 +48,11 @@ def evaluate_acceptance(
 ) -> dict[str, bool]:
     """Apply explicit regression gates to a benchmark population."""
     return {
-        "quality_score": metrics.phenotype_diversity >= 0.0 and calibration.count > 0,
-        "minimum_quality_score": metrics.count > 0,
-        "domain_fidelity_threshold": True,
+        "minimum_quality_score": quality_score >= min_quality_score,
+        "domain_fidelity_threshold": domain_fidelity >= min_domain_fidelity,
         "duplicate_rate_threshold": metrics.duplicate_rate <= max_duplicate_rate,
-        "requested_domain_fidelity_threshold": calibration.count > 0,
-        "population_valid": min_quality_score >= 0.0 and min_domain_fidelity >= 0.0,
+        "nonempty_population": metrics.count > 0,
+        "calibration_available": calibration.count == metrics.count,
     }
 
 
@@ -79,12 +74,15 @@ def build_report(
     quality = assess_population(items)
     calibration = summarize_calibration(items)
     domain_fidelity = conditional_domain_fidelity(items)
-    acceptance = {
-        "minimum_quality_score": quality.quality_score >= min_quality_score,
-        "domain_fidelity_threshold": domain_fidelity >= min_domain_fidelity,
-        "duplicate_rate_threshold": metrics.duplicate_rate <= max_duplicate_rate,
-        "nonempty_population": metrics.count > 0,
-    }
+    acceptance = evaluate_acceptance(
+        metrics,
+        calibration,
+        domain_fidelity,
+        quality.quality_score,
+        min_quality_score=min_quality_score,
+        min_domain_fidelity=min_domain_fidelity,
+        max_duplicate_rate=max_duplicate_rate,
+    )
     return BenchmarkReport(
         report_version=REPORT_VERSION,
         suite=suite,
