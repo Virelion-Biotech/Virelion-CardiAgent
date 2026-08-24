@@ -10,7 +10,7 @@ from .benchmark_report import assert_accepted, build_report
 from .suites import available_suites, build_suite
 
 
-RUNNER_VERSION = "0.2"
+RUNNER_VERSION = "0.3"
 
 
 def run_benchmark(
@@ -18,7 +18,7 @@ def run_benchmark(
     suite_name: str = "baseline",
     seed: int | None = None,
     output_dir: str | Path | None = None,
-    enforce_acceptance: bool = False,
+    enforce_acceptance: bool = True,
 ) -> dict[str, object]:
     """Generate one suite, evaluate it, and optionally persist its artifacts."""
     suite = build_suite(suite_name, seed=seed)
@@ -45,7 +45,7 @@ def run_benchmark(
     return result
 
 
-def run_all_benchmarks(*, output_dir: str | Path | None = None, enforce_acceptance: bool = False) -> list[dict[str, object]]:
+def run_all_benchmarks(*, output_dir: str | Path | None = None, enforce_acceptance: bool = True) -> list[dict[str, object]]:
     """Run every registered suite using its canonical seed."""
     return [
         run_benchmark(suite_name=name, output_dir=output_dir, enforce_acceptance=enforce_acceptance)
