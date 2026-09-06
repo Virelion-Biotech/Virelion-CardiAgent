@@ -1,205 +1,84 @@
 # Virelion-CardiAgent
 
-**A reproducible challenge-agent framework for Virelion's cardiac detection platform.**
+CardiAgent is a Python framework for generating reproducible, phenotype-level cardiac challenge cases for evaluation by downstream systems such as CardiVex.
 
-CardiAgent is the upstream sibling of **Virelion-CardiVex**. Its job is to create standardized, reproducible, increasingly realistic challenge representations that CardiVex can receive and evaluate against cardiac-cell response measurements.
+## Scope
 
-## Architecture
+A `ChallengeAgent` can represent:
 
-```text
-                         CardiAgent
-                            │
-              ┌─────────────┴─────────────┐
-              │                           │
-      deterministic prior            ML generator
-              │                           │
-              └─────────────┬─────────────┘
-                            ▼
-                  Challenge population
-                            │
-                    quality / diversity
-                            │
-                            ▼
-                    blind CardiVex
-                            │
-                      observations
-                            │
-                            ▼
-                   detection outcomes
-                            │
-                            ▼
-                  AdaptiveChallengeEngine
-                            │
-                ┌───────────┴───────────┐
-                ▼                       ▼
-          harder cases             curriculum
-                │                       │
-                └───────────┬───────────┘
-                            ▼
-                     next benchmark
-```
+- challenge domain;
+- severity and difficulty;
+- onset, persistence, recovery, and temporal state;
+- observable phenotype signals;
+- cell-context categories;
+- response heterogeneity;
+- phenotype overlap;
+- measurement noise and partial observation;
+- confounder tags and provenance.
 
-The boundary is intentional: **CardiAgent specifies the challenge; CardiVex independently evaluates the observable cardiac response.**
+The repository also contains a conditional variational autoencoder for phenotype-level challenge generation and an adaptive challenge engine that uses downstream outcome summaries to select harder or diagnostically useful cases.
 
-## Challenge-agent design
-
-CardiAgent does more than sample one static phenotype vector. Each generated agent can contain:
-
-- domain and provenance
-- severity and independent difficulty
-- onset and persistence
-- a deterministic baseline → early → peak → persistent → recovery trajectory
-- dominant and secondary observable signals
-- cell-context categories
-- response heterogeneity
-- phenotype overlap with a neighboring challenge domain
-- measurement noise and partial-observation characteristics
-- explicit confounder tags
-- scenario-family and generator version metadata
-
-The deterministic generator is the safe prior and benchmark baseline. The ML layer learns distributions from these phenotype-level agents and produces **new sampled agents**, rather than simply replaying the training examples.
-
-## ML agent generator
-
-`AgentGeneratorModel` is a conditional variational autoencoder (CVAE) implemented with optional PyTorch. It learns the distribution of phenotype-level `ChallengeAgent` examples conditioned on challenge domain and severity.
-
-It can train on an existing challenge corpus, sample novel latent variants, control difficulty through latent sampling temperature, and package the results directly into a blinded CardiVex benchmark.
-
-```python
-model = AgentGeneratorModel(seed=11).fit(training_agents, epochs=250)
-new_cases = model.sample(
-    domain=ChallengeDomain.INFLAMMATORY,
-    severity=0.75,
-    difficulty=0.95,
-    count=32,
-)
-```
-
-## Adaptive generation
-
-The ML generator is only the first layer. `AdaptiveChallengeEngine` creates a closed evaluation loop **without requiring access to CardiVex internals**.
-
-CardiVex returns only outcome-level information such as:
-
-```python
-DetectionOutcome(
-    case_id="...",
-    predicted_domain="...",
-    confidence=0.61,
-    detected=False,
-    characterization_correct=False,
-)
-```
-
-CardiAgent converts those outcomes into hardness signals and can evolve the next generation of phenotype-level challenges.
-
-```python
-engine = AdaptiveChallengeEngine(seed=42)
-engine.score(outcomes)
-stage = engine.next_stage(mean_hardness=0.72)
-next_generation = engine.evolve(
-    parents=hard_cases,
-    count=64,
-    stage=stage,
-)
-```
-
-Evolution uses phenotype-space recombination and bounded mutation. It does **not** optimize operational biological parameters.
-
-This gives CardiAgent a genuine feedback loop:
+## Workflow
 
 ```text
-ML generation
-     ↓
-CardiVex benchmark
-     ↓
-CardiVex outcome
-     ↓
-hardness analysis
-     ↓
-phenotype-space evolution
-     ↓
-new challenge population
-     ↓
-CardiVex
+challenge definitions / empirical profiles
+                 ↓
+        deterministic generator
+                 ↓
+          optional ML generator
+                 ↓
+       population quality checks
+                 ↓
+          blinded handoff
+                 ↓
+             CardiVex
+                 ↓
+        outcome-level feedback
+                 ↓
+       adaptive challenge engine
 ```
 
-## Curriculum learning
+CardiAgent operates on abstract host-response/phenotype representations. It does not generate pathogen sequences, wet-lab protocols, culture conditions, doses, or other operational biological parameters.
 
-Challenges are organized into controlled stages:
+## Installation
 
-1. `baseline`
-2. `moderate`
-3. `hard`
-4. `stress`
-5. `edge`
-
-Difficulty increases through abstract challenge properties such as phenotype overlap, response heterogeneity, measurement noise, and partial observation. The engine deliberately avoids jumping straight to maximum difficulty when downstream performance is poor; the benchmark remains diagnostically useful rather than becoming an arbitrary failure generator.
-
-## Population quality control
-
-`assess_population()` provides a quality gate before a generated population is handed to CardiVex. It reports:
-
-- domain balance
-- mean severity
-- mean difficulty
-- phenotype-space diversity
-- duplicate rate
-- overall quality score
-- warnings for collapsed or imbalanced populations
-
-This prevents an ML generator from producing thousands of superficially different but effectively identical cases.
-
-## Blind benchmarking
-
-For detection benchmarking, use `build_blind_benchmark()` or `create_blind_handoff()`.
-
-The public presentation contains the observable challenge representation but omits the challenge domain and other direct ground-truth labels. The evaluator record retains the true domain, severity, scenario family, difficulty, and overlap reference separately.
-
-The evaluator therefore remains independent:
-
-```text
-truth ────────────────┐
-                      │
-blinded presentation → CardiVex → prediction
-                      │
-                      └──────────→ scoring
+```bash
+pip install -e '.[test]'
 ```
 
-CardiAgent does **not** decide whether a challenge is detectable. It creates the challenge and preserves the ground truth so CardiVex can be tested independently.
+## Core objects
 
-## Package
+- `ChallengeDomain`
+- `PhenotypeProfile`
+- `ChallengeAgent`
+- `ChallengeGenerator`
+- `AgentGeneratorModel`
+- `DetectionOutcome`
+- `AdaptiveChallengeEngine`
+- `PopulationReport`
+- `CardiVexHandoff`
+- `BlindCardiVexHandoff`
+- `ChallengeManifest`
+- `BlindBenchmark`
 
-The Python package defines:
+## Integration
 
-- `ChallengeDomain` — controlled challenge categories.
-- `PhenotypeProfile` — normalized host-observable feature vector.
-- `ChallengeAgent` — complete serializable challenge instance.
-- `ChallengeGenerator` — deterministic detailed scenario generator.
-- `AgentGeneratorModel` — conditional VAE for learned challenge-agent generation.
-- `train_agent_model` / `generate_ml_agents` — ML training and sampling helpers.
-- `generate_ml_benchmark` — ML generation directly into a blind benchmark.
-- `DetectionOutcome` — CardiVex outcome contract.
-- `AdaptiveChallengeEngine` — outcome-driven challenge evolution and curriculum.
-- `CurriculumStage` — controlled difficulty regime.
-- `PopulationReport` / `assess_population` — diversity and quality gates.
-- `CardiVexHandoff` / `create_handoff` — trusted downstream envelope.
-- `BlindCardiVexHandoff` / `create_blind_handoff` — detection-only envelope.
-- `ChallengeManifest` / `build_manifest` — reproducible batch container.
-- `BlindBenchmark` / `build_blind_benchmark` — reproducible blinded benchmark set.
+CardiAgent creates challenge definitions and preserves ground truth. CardiVex performs downstream detection/characterization. CardiBench can provide benchmark context, CardiEval can score submissions, CardiBridge carries typed messages, and CardiTrace can record provenance.
 
-## Initial challenge domains
+## Validation and limitations
 
-- ischemic
-- inflammatory
-- electrophysiologic
-- toxic injury
-- viral-like
-- metabolic
-- genetic susceptibility
+Generated cases are computational representations. They should not be treated as measured biological states unless explicitly derived from and linked to empirical observations. ML-generated cases require distribution and novelty checks before benchmark use.
 
-These are phenotype-level categories.
+## Testing
 
-## Safety boundary
+```bash
+pytest
+```
 
-All generated challenge content stays at the abstract host-response / phenotype level. CardiAgent does not generate pathogen sequences, biological construction instructions, wet-lab protocols, culture conditions, doses, or other operational biological parameters.
+## License
+
+GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later). See `LICENSE`.
+
+## Citation
+
+Cite the repository release and the empirical sources used to construct challenge profiles.
