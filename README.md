@@ -1,8 +1,8 @@
 # Virelion-CardiAgent
 
-CardiAgent is a Python framework for generating reproducible, phenotype-level cardiac challenge cases for evaluation by downstream systems such as CardiVex.
+CardiAgent is a Python framework for generating reproducible, phenotype-level cardiac challenge cases for computational evaluation.
 
-## Scope
+## What it contains
 
 A `ChallengeAgent` can represent:
 
@@ -16,27 +16,7 @@ A `ChallengeAgent` can represent:
 - measurement noise and partial observation;
 - confounder tags and provenance.
 
-The repository also contains a conditional variational autoencoder for phenotype-level challenge generation and an adaptive challenge engine that uses downstream outcome summaries to select harder or diagnostically useful cases.
-
-## Workflow
-
-```text
-challenge definitions / empirical profiles
-                 ↓
-        deterministic generator
-                 ↓
-          optional ML generator
-                 ↓
-       population quality checks
-                 ↓
-          blinded handoff
-                 ↓
-             CardiVex
-                 ↓
-        outcome-level feedback
-                 ↓
-       adaptive challenge engine
-```
+The repository also contains a conditional variational autoencoder for phenotype-level challenge generation and an adaptive challenge engine that uses outcome summaries to select harder or diagnostically useful cases.
 
 CardiAgent operates on abstract host-response/phenotype representations. It does not generate pathogen sequences, wet-lab protocols, culture conditions, doses, or other operational biological parameters.
 
@@ -46,39 +26,36 @@ CardiAgent operates on abstract host-response/phenotype representations. It does
 pip install -e '.[test]'
 ```
 
-## Core objects
+## Usage
 
-- `ChallengeDomain`
-- `PhenotypeProfile`
-- `ChallengeAgent`
-- `ChallengeGenerator`
-- `AgentGeneratorModel`
-- `DetectionOutcome`
-- `AdaptiveChallengeEngine`
-- `PopulationReport`
-- `CardiVexHandoff`
-- `BlindCardiVexHandoff`
-- `ChallengeManifest`
-- `BlindBenchmark`
+The main Python objects are `ChallengeDomain`, `PhenotypeProfile`, `ChallengeAgent`, `ChallengeGenerator`, `AgentGeneratorModel`, `DetectionOutcome`, `AdaptiveChallengeEngine`, `PopulationReport`, `ChallengeManifest`, and `BlindBenchmark`.
 
-## Integration
+A typical workflow is:
 
-CardiAgent creates challenge definitions and preserves ground truth. CardiVex performs downstream detection/characterization. CardiBench can provide benchmark context, CardiEval can score submissions, CardiBridge carries typed messages, and CardiTrace can record provenance.
-
-## Validation and limitations
-
-Generated cases are computational representations. They should not be treated as measured biological states unless explicitly derived from and linked to empirical observations. ML-generated cases require distribution and novelty checks before benchmark use.
-
-## Testing
-
-```bash
-pytest
+```text
+challenge definitions / empirical profiles
+        ↓
+deterministic or ML generation
+        ↓
+population quality checks
+        ↓
+challenge manifest / blinded representation
 ```
+
+## Inputs and outputs
+
+**Inputs:** abstract phenotype profiles, challenge-domain definitions, severity/temporal parameters, heterogeneity/noise settings, empirical distributions where available, and generation configuration.
+
+**Outputs:** phenotype-level challenge scenarios, population reports, manifests, blinded benchmark representations, ground-truth records, and provenance metadata.
+
+## Validation
+
+Validation includes population quality checks and deterministic/reproducibility checks. ML-generated cases require distribution, novelty, and plausibility checks before benchmark use. Generated cases are computational representations unless explicitly linked to empirical observations.
+
+## Limitations
+
+Generated cases are not automatically measured biological states. Synthetic and ML-generated scenarios can reproduce statistical patterns without reproducing biological mechanisms. Ground truth quality depends on the source profiles and assumptions. Challenge difficulty is conditional on the representation and detector used.
 
 ## License
 
 GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later). See `LICENSE`.
-
-## Citation
-
-Cite the repository release and the empirical sources used to construct challenge profiles.
