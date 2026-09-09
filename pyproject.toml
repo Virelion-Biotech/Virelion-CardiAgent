@@ -17,6 +17,10 @@ test = ["pytest>=8"]
 ml = ["torch>=2.2"]
 all = ["pytest>=8", "torch>=2.2"]
 
+[project.scripts]
+cardiagent = "cardiagent.cli:main"
+cardiagent-hearttwin = "cardiagent.hearttwin_adapter:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
