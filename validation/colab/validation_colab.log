@@ -1,0 +1,21 @@
+/usr/local/lib/python3.13/dist-packages/numpy/lib/_function_base_impl.py:2999: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/usr/local/lib/python3.13/dist-packages/numpy/lib/_function_base_impl.py:3000: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/usr/local/lib/python3.13/dist-packages/numpy/lib/_function_base_impl.py:2999: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/usr/local/lib/python3.13/dist-packages/numpy/lib/_function_base_impl.py:3000: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+1/7 deterministic reproducibility
+2/7 generating deterministic population
+3/7 bounds
+4/7 uniqueness
+5/7 trajectories
+6/7 population statistics
+7/7 ML validation
+
+============================================================
+VALIDATION COMPLETE
+============================================================
+Results directory: /content/CardiAgent/validation_colab_results
+Report: /content/CardiAgent/validation_colab_results/scientific_validation_report.json
