@@ -12,7 +12,7 @@ def test_multi_seed_experiment_returns_uncertainty_summary() -> None:
         severity=0.5,
         difficulty=0.6,
     )
-    assert result.version == "0.1"
+    assert result.version == "0.2"
     assert result.seeds == (11, 23)
     assert result.phenotype_mean_distance.mean >= 0.0
     assert result.phenotype_mean_distance.ci95_half_width >= 0.0

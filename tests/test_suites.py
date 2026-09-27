@@ -3,7 +3,16 @@ from cardiagent import ChallengeDomain, available_suites, build_suite
 
 def test_all_benchmark_suites_are_available_and_nonempty():
     names = available_suites()
-    assert names == ("baseline", "difficulty", "severity", "overlap")
+    assert names == (
+        "baseline",
+        "difficulty",
+        "severity",
+        "overlap",
+        "temporal",
+        "heterogeneity",
+        "partial_observation",
+        "ood",
+    )
     for name in names:
         suite = build_suite(name)
         assert suite.name == name
