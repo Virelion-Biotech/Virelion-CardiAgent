@@ -6,7 +6,7 @@ def test_handoff_is_machine_readable():
     handoff = create_handoff(challenge)
     payload = handoff.to_dict()
 
-    assert payload["contract_version"] == "0.1"
+    assert payload["contract_version"] == "0.3"
     assert payload["challenge"]["agent_id"] == challenge.agent_id
     assert "metabolic_disruption" in payload["expected_observables"]
 
