@@ -1,8 +1,11 @@
+import pytest
+
 from cardiagent.experiment import run_multi_seed_experiment
 from cardiagent.suites import baseline_suite
 
 
 def test_multi_seed_experiment_returns_uncertainty_summary() -> None:
+    pytest.importorskip("torch")
     training = baseline_suite(seed=100).challenges
     result = run_multi_seed_experiment(
         training,
