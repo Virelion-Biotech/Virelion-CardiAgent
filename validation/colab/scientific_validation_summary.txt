@@ -1,0 +1,20 @@
+VIRELION CARDIAGENT SCIENTIFIC VALIDATION
+=========================================
+
+Git commit: 4348d454459d6c459937a2804af70a72cb2952a2
+Elapsed seconds: 18.61
+
+reproducibility: PASS
+bounds: PASS
+uniqueness: PASS
+trajectories: PASS
+
+ML status: PASS_WITH_DIAGNOSTICS
+ML training summary:
+{
+  "examples": 700,
+  "epochs": 100,
+  "final_loss": 0.00585617972,
+  "learning_rate": 0.002,
+  "beta": 0.015
+}
