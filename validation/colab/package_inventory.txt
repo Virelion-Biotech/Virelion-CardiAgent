@@ -1,0 +1,11 @@
+=== CURRENT DIRECTORY ===
+/content
+
+=== PACKAGE CONTENTS ===
+package_inventory.txt
+validation_colab.log
+validation_colab_results/scientific_validation_report.json
+validation_colab_results/scientific_validation_summary.txt
+
+=== GIT COMMIT ===
+4348d454459d6c459937a2804af70a72cb2952a2

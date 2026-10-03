@@ -19,6 +19,7 @@ from .experiment_artifact import ARTIFACT_VERSION, experiment_fingerprint, run_a
 from .generator import ChallengeGenerator
 from .handoff import BlindCardiVexHandoff, CardiVexHandoff, create_blind_handoff, create_handoff
 from .literature import LITERATURE_ARCHETYPES, LiteratureArchetype, archetypes_by_domain, get_archetype
+from .manifest import ChallengeManifest, build_manifest
 from .ml import AgentGeneratorModel, generate_ml_agents, generate_ml_benchmark, train_agent_model
 from .model_comparison import GeneratorComparison, build_matched_ml_population, build_reference_population, compare_populations
 from .models import ChallengeAgent, ChallengeDomain, PhenotypeProfile
