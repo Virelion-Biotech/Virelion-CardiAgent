@@ -13,6 +13,7 @@ from statistics import mean
 from typing import Iterable, Sequence
 
 from .models import ChallengeAgent, ChallengeDomain
+from .serialization import finite_number
 
 
 PHENOTYPE_FIELDS = (
@@ -145,6 +146,7 @@ def conditional_numeric_fidelity(
     The requested target is read from ``metadata["requested_<field>"]``. This
     gives conditional generators a simple, model-agnostic calibration metric.
     """
+    finite_number(tolerance, "tolerance", low=0)
     if tolerance < 0:
         raise ValueError("tolerance must be non-negative")
     items = list(challenges)
@@ -162,6 +164,7 @@ def conditional_numeric_fidelity(
 
 def pairwise_overlap_rate(challenges: Iterable[ChallengeAgent], *, threshold: float = 0.60) -> float:
     """Fraction of pairs whose normalized phenotype distance is below threshold."""
+    finite_number(threshold, "threshold", low=0)
     if threshold < 0:
         raise ValueError("threshold must be non-negative")
     items = list(challenges)

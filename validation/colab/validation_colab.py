@@ -30,8 +30,10 @@ from cardiagent.generator import ChallengeGenerator
 from cardiagent.models import ChallengeDomain
 
 
-OUT = Path("validation_colab_results_v2")
-OUT.mkdir(exist_ok=True)
+import os
+
+OUT = Path(os.environ.get("CARDIAGENT_VALIDATION_OUTPUT", "validation_colab_results_v2"))
+OUT.mkdir(parents=True,exist_ok=True)
 
 DATA_SEED = 20260917
 SPLIT_SEED = 20260918
@@ -119,6 +121,9 @@ def environment_report():
         "platform": platform.platform(),
         "numpy": np.__version__,
         "git_commit": command(["git", "rev-parse", "HEAD"]),
+        "source_sha256": {str(p): hashlib.sha256(p.read_bytes()).hexdigest()
+                          for p in sorted(Path("src/cardiagent").rglob("*.py"))},
+        "harness_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
     }
 
     try:

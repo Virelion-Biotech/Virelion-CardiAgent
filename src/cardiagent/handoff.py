@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import Any
 import json
 
-from .benchmark import _presentation, opaque_case_id
+from .benchmark import _presentation, opaque_case_id, audit_blind_presentation
 from .models import ChallengeAgent
 
 
@@ -80,8 +80,14 @@ def create_blind_handoff(
     generator's domain-coded agent ID. This prevents accidental label leakage
     through identifiers such as ``CA-inflammatory-...``.
     """
+    presentation = _presentation(challenge)
+    violations = audit_blind_presentation(
+        {"case_id": case_id or opaque_case_id(challenge), **presentation}
+    )
+    if violations:
+        raise ValueError(f"Blind handoff failed leakage audit: {violations}")
     return BlindCardiVexHandoff(
         contract_version=f"{HANDOFF_VERSION}-blind",
         case_id=case_id or opaque_case_id(challenge),
-        presentation=_presentation(challenge),
+        presentation=presentation,
     )

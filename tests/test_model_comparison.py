@@ -16,7 +16,7 @@ def test_reference_population_is_balanced() -> None:
 
 
 def test_ml_population_is_conditioned_and_comparable() -> None:
-    torch = pytest.importorskip("torch")
+    pytest.importorskip("torch")
     from cardiagent.ml import AgentGeneratorModel
 
     training = build_reference_population(seed=20, per_domain=2)

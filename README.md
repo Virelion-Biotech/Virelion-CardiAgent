@@ -59,3 +59,55 @@ Generated cases are not automatically measured biological states. Synthetic and 
 ## License
 
 GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later). See `LICENSE`.
+
+## Complete CPU workflows (0.4.0)
+
+The core package needs Python 3.10+ and no GPU or PyTorch. Install optional ML
+on CPU explicitly:
+
+```bash
+python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -e '.[test,validation]'
+cardiagent doctor
+cardiagent generate --domain ischemic --seed 7 --output case.json
+cardiagent manifest --domain ischemic --count 40 --seed 7 --output population.json
+cardiagent benchmark --output-dir artifacts/benchmarks
+cardiagent blind --input population.json --public public.json --truth truth.json
+cardiagent handoff --input case.json --blind --output handoff.json
+cardiagent train --input population.json --epochs 25 --output model.pt
+cardiagent sample --model model.pt --domain ischemic --count 10 --output samples.json
+cardiagent adapt --input population.json --outcomes outcomes.json --count 10 --output adapted.json
+```
+
+`outcomes.json` is an array, for example
+`[{"case_id":"<case_id from public.json>","predicted_domain":null,"confidence":0.2,"detected":false,"characterization_correct":false}]`.
+Blinded IDs remain stable across shuffle order and can be joined to adaptive
+scores. Keep truth files separate from downstream benchmark inputs. Opaque IDs
+are reproducible hashes, not cryptographic anonymization against known inputs.
+
+Models persist their private random state and sample counter. Reloading resumes
+that sequence; `sample` intentionally has no seed override. Legacy checkpoints
+without random-state metadata cannot resume an earlier sequence exactly.
+Checkpoint loading uses PyTorch's restricted `weights_only=True` loader.
+JSON and checkpoint outputs use atomic replacement per file; a public/truth
+pair is not a two-file transaction.
+
+## Validation limits
+
+The CPU held-out CVAE protocol **failed** its predeclared quality checks.
+Reproducibility passed, but all 21 model/domain and 189 condition screens failed;
+all domain discriminator AUCs were 1.0. The ML generator is not benchmark-qualified.
+See [CPU audit](validation/cpu/AUDIT.md) and preserved raw results.
+
+Deterministic tests establish software behavior on synthetic abstract phenotypes.
+They do not establish patient realism, clinical efficacy, or external biological
+validity. Overlap and partial-observation controls currently describe scenarios;
+they do not implement feature mixing or observation masking. CVAE samples are
+static profiles, and adaptive offspring omit inherited trajectories to avoid
+presenting stale time series as generated data. Handoff schemas are packaged and
+tested; a live CardiVex consumer integration is not established in this repository.
+
+Statistical summaries use sample standard deviations. Student-t confidence
+intervals require SciPy and at least two observations; unavailable intervals and
+undefined standardized effects are JSON null, never infinity. Repeated seeds
+are rejected as independent experiment replicates.

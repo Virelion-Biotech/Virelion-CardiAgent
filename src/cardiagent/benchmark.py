@@ -7,16 +7,19 @@ make an independent detection/characterization call.
 
 from dataclasses import dataclass
 import hashlib
-import json
 import random
 import re
+from copy import deepcopy
+from .serialization import strict_json
 from typing import Any, Iterable
 
 from .models import ChallengeAgent
 
 
 BENCHMARK_VERSION = "0.2"
-_OPAQUE_ID_PATTERN = re.compile(r"^CA-(?:ischemic|inflammatory|electrophysiologic|toxic_injury|viral_like|metabolic|genetic_susceptibility)-")
+_OPAQUE_ID_PATTERN = re.compile(
+    r"(?:^|[^a-z])(?:ischemic|inflammatory|electrophysiologic|toxic_injury|viral_like|metabolic|genetic_susceptibility)(?:$|[^a-z])"
+)
 
 
 @dataclass(frozen=True)
@@ -28,10 +31,10 @@ class BlindCase:
     ground_truth: dict[str, Any]
 
     def public_dict(self) -> dict[str, Any]:
-        return {"case_id": self.case_id, "presentation": self.presentation}
+        return {"case_id": self.case_id, "presentation": deepcopy(self.presentation)}
 
     def evaluation_dict(self) -> dict[str, Any]:
-        return {"case_id": self.case_id, "ground_truth": self.ground_truth}
+        return {"case_id": self.case_id, "ground_truth": deepcopy(self.ground_truth)}
 
 
 @dataclass(frozen=True)
@@ -62,10 +65,10 @@ class BlindBenchmark:
         }
 
     def public_json(self) -> str:
-        return json.dumps(self.public_dict(), indent=2, sort_keys=True)
+        return strict_json(self.public_dict(), indent=2, sort_keys=True)
 
     def evaluation_json(self) -> str:
-        return json.dumps(self.evaluation_dict(), indent=2, sort_keys=True)
+        return strict_json(self.evaluation_dict(), indent=2, sort_keys=True)
 
 
 def _opaque_case_id(challenge: ChallengeAgent) -> str:
@@ -78,24 +81,32 @@ def _presentation(challenge: ChallengeAgent) -> dict[str, Any]:
     metadata = challenge.metadata
     # Deliberately exclude challenge.agent_id. Domain-coded generator IDs are
     # a trivial label-leakage channel and must never enter a blind presentation.
-    return {
-        "representation": "phenotype-level",
-        "version": challenge.version,
-        "severity_band": "low" if challenge.severity < 0.34 else "moderate" if challenge.severity < 0.67 else "high",
-        "temporal": {
-            "onset": challenge.onset,
-            "persistence": challenge.persistence,
-            "trajectory": metadata.get("temporal_profile", []),
-        },
-        "cell_context": metadata.get("cell_context", []),
-        "phenotype": challenge.phenotype.to_dict() if hasattr(challenge.phenotype, "to_dict") else challenge.phenotype.__dict__,
-        "observation_characteristics": {
-            "measurement_noise": metadata.get("measurement_noise", 0.0),
-            "partial_observation_rate": metadata.get("partial_observation_rate", 0.0),
-            "heterogeneity": challenge.heterogeneity,
-        },
-        "confounders": metadata.get("confounders", []),
-    }
+    return deepcopy(
+        {
+            "representation": "phenotype-level",
+            "version": challenge.version,
+            "severity_band": "low"
+            if challenge.severity < 0.34
+            else "moderate"
+            if challenge.severity < 0.67
+            else "high",
+            "temporal": {
+                "onset": challenge.onset,
+                "persistence": challenge.persistence,
+                "trajectory": metadata.get("temporal_profile", []),
+            },
+            "cell_context": metadata.get("cell_context", []),
+            "phenotype": challenge.phenotype.to_dict()
+            if hasattr(challenge.phenotype, "to_dict")
+            else challenge.phenotype.__dict__,
+            "observation_characteristics": {
+                "measurement_noise": metadata.get("measurement_noise", 0.0),
+                "partial_observation_rate": metadata.get("partial_observation_rate", 0.0),
+                "heterogeneity": challenge.heterogeneity,
+            },
+            "confounders": metadata.get("confounders", []),
+        }
+    )
 
 
 def audit_blind_presentation(presentation: dict[str, Any]) -> tuple[str, ...]:
@@ -111,7 +122,14 @@ def audit_blind_presentation(presentation: dict[str, Any]) -> tuple[str, ...]:
         if isinstance(value, dict):
             for key, child in value.items():
                 lowered = str(key).lower()
-                if lowered in {"domain", "challenge_id", "agent_id", "ground_truth", "scenario_family", "overlap_reference"}:
+                if lowered in {
+                    "domain",
+                    "challenge_id",
+                    "agent_id",
+                    "ground_truth",
+                    "scenario_family",
+                    "overlap_reference",
+                }:
                     violations.append(f"forbidden field: {path}.{key}")
                 walk(child, f"{path}.{key}")
         elif isinstance(value, (list, tuple)):
@@ -137,13 +155,17 @@ def build_blind_benchmark(
     deterministic and only affects case order, making benchmark runs auditable.
     """
     items = list(challenges)
+    if not isinstance(benchmark_id, str) or not benchmark_id.strip():
+        raise ValueError("benchmark_id must be non-empty")
+    if len({c.agent_id for c in items}) != len(items):
+        raise ValueError("Challenge IDs must be unique")
     rng = random.Random(seed)
     if shuffle:
         rng.shuffle(items)
 
     cases: list[BlindCase] = []
     for index, challenge in enumerate(items, start=1):
-        case_id = f"{benchmark_id}-{index:04d}"
+        case_id = opaque_case_id(challenge)
         presentation = _presentation(challenge)
         violations = audit_blind_presentation(presentation)
         if violations:

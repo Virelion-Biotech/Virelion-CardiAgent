@@ -112,6 +112,8 @@ def build_reference_population(
     """Create a deterministic training/reference population with fixed targets."""
     if per_domain < 1:
         raise ValueError("per_domain must be positive")
+    if not severities:
+        raise ValueError("severities cannot be empty")
     output: list[ChallengeAgent] = []
     index = 0
     for domain in ChallengeDomain:

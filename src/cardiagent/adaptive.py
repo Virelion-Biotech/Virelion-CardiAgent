@@ -10,9 +10,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import random
-from typing import Iterable, Mapping, Sequence
+from typing import Iterable, Sequence
 
-from .models import ChallengeAgent, ChallengeDomain, PhenotypeProfile
+from .models import ChallengeAgent, PhenotypeProfile
+from .benchmark import opaque_case_id
+from .serialization import finite_number, positive_integer
+from copy import deepcopy
 
 
 @dataclass(frozen=True)
@@ -26,6 +29,8 @@ class DetectionOutcome:
     characterization_correct: bool = False
 
     def __post_init__(self) -> None:
+        if not self.case_id.strip():
+            raise ValueError("case_id cannot be empty")
         if not 0.0 <= self.confidence <= 1.0:
             raise ValueError("confidence must be within [0, 1]")
 
@@ -50,6 +55,12 @@ class CurriculumStage:
     noise: float
     partial_observation: float
 
+    def __post_init__(self):
+        if not self.name.strip():
+            raise ValueError("Stage name cannot be empty")
+        for key in ("difficulty", "overlap", "heterogeneity", "noise", "partial_observation"):
+            finite_number(getattr(self, key), key, low=0, high=1)
+
 
 DEFAULT_CURRICULUM: tuple[CurriculumStage, ...] = (
     CurriculumStage("baseline", 0.25, 0.15, 0.15, 0.02, 0.00),
@@ -69,9 +80,14 @@ class AdaptiveChallengeEngine:
 
     VERSION = "0.4-adaptive"
 
-    def __init__(self, *, seed: int = 0, curriculum: Sequence[CurriculumStage] = DEFAULT_CURRICULUM):
+    def __init__(
+        self, *, seed: int = 0, curriculum: Sequence[CurriculumStage] = DEFAULT_CURRICULUM
+    ):
         self.seed = seed
         self.curriculum = tuple(curriculum)
+        if not self.curriculum:
+            raise ValueError("curriculum cannot be empty")
+        self._generation = 0
         self._scores: dict[str, AdaptiveScore] = {}
 
     def score(self, outcomes: Iterable[DetectionOutcome]) -> list[AdaptiveScore]:
@@ -109,12 +125,14 @@ class AdaptiveChallengeEngine:
         """Create a new generation by safe phenotype-space recombination/mutation."""
         if not parents:
             raise ValueError("At least one parent challenge is required")
+        positive_integer(count, "count")
+        finite_number(mutation_scale, "mutation_scale", low=0)
         if count < 1:
             raise ValueError("count must be positive")
         if not 0.0 <= mutation_rate <= 1.0 or mutation_scale < 0.0:
             raise ValueError("invalid mutation parameters")
         stage = stage or self.curriculum[-1]
-        rng = random.Random(self.seed + len(self._scores) + count)
+        rng = random.Random(self.seed + len(self._scores) + count + self._generation * 1000003)
         output: list[ChallengeAgent] = []
 
         for index in range(count):
@@ -131,19 +149,25 @@ class AdaptiveChallengeEngine:
 
             # Stage controls challenge-level observability, not any operational
             # biological parameter.
-            metadata = dict(a.metadata)
-            metadata.update({
-                "generator": "virelion-cardiagent-adaptive",
-                "generator_version": self.VERSION,
-                "ml_generated": bool(metadata.get("ml_generated", False)),
-                "adaptive_generation": True,
-                "curriculum_stage": stage.name,
-                "difficulty": stage.difficulty,
-                "phenotype_overlap": stage.overlap,
-                "measurement_noise": stage.noise,
-                "partial_observation_rate": stage.partial_observation,
-                "parent_ids": [a.agent_id, b.agent_id],
-            })
+            metadata = deepcopy(a.metadata)
+            metadata.pop("temporal_profile", None)
+            metadata.pop("requested_domain", None)
+            metadata.pop("requested_severity", None)
+            metadata.update(
+                {
+                    "generator": "virelion-cardiagent-adaptive",
+                    "generator_version": self.VERSION,
+                    "ml_generated": bool(metadata.get("ml_generated", False)),
+                    "adaptive_generation": True,
+                    "curriculum_stage": stage.name,
+                    "difficulty": stage.difficulty,
+                    "requested_difficulty": stage.difficulty,
+                    "phenotype_overlap": stage.overlap,
+                    "measurement_noise": stage.noise,
+                    "partial_observation_rate": stage.partial_observation,
+                    "parent_ids": [a.agent_id, b.agent_id],
+                }
+            )
             agent_id = self._id(a, b, index)
             output.append(
                 ChallengeAgent(
@@ -159,13 +183,26 @@ class AdaptiveChallengeEngine:
                     metadata=metadata,
                 )
             )
+        self._generation += 1
         return output
 
-    def hard_cases(self, cases: Sequence[ChallengeAgent], *, top_k: int = 10) -> list[ChallengeAgent]:
+    def hard_cases(
+        self, cases: Sequence[ChallengeAgent], *, top_k: int = 10
+    ) -> list[ChallengeAgent]:
         """Return cases whose IDs have the highest downstream hardness."""
-        ranked = sorted(cases, key=lambda c: self._scores.get(c.agent_id, AdaptiveScore(c.agent_id, 0.0, "unscored")).hardness, reverse=True)
+        positive_integer(top_k, "top_k")
+        ranked = sorted(
+            cases,
+            key=lambda c: (
+                self._scores.get(
+                    opaque_case_id(c),
+                    self._scores.get(c.agent_id, AdaptiveScore(c.agent_id, 0.0, "unscored")),
+                ).hardness
+            ),
+            reverse=True,
+        )
         return ranked[:top_k]
 
     def _id(self, a: ChallengeAgent, b: ChallengeAgent, index: int) -> str:
-        raw = f"{self.seed}|{a.agent_id}|{b.agent_id}|{index}".encode()
+        raw = f"{self.seed}|{self._generation}|{a.agent_id}|{b.agent_id}|{index}".encode()
         return f"ADAPT-{hashlib.sha256(raw).hexdigest()[:16]}"

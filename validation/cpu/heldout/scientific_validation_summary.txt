@@ -1,0 +1,13 @@
+VIRELION CARDIAGENT CVAE SCIENTIFIC VALIDATION V2
+================================================
+Git commit: 3761bff478e13607f4ec5c3dde50587724d2b6ec
+Train/validation/test: 1701/567/567
+Model seeds: (17, 29, 41)
+Overall screen: FAIL
+ML reproducibility: PASS
+Failed domains: 21
+Failed conditions: 189
+Discriminator failures: 21
+Elapsed seconds: 64.86
+
+This is internal computational generative validation, not external biological validation.

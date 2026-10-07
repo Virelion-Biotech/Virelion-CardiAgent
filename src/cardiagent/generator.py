@@ -1,6 +1,7 @@
 """Deterministic generation of detailed, phenotype-level challenge agents."""
 
 from dataclasses import replace
+from .serialization import finite_number
 import random
 
 from .models import ChallengeAgent, ChallengeDomain, PhenotypeProfile
@@ -40,6 +41,8 @@ class ChallengeGenerator:
     SCENARIO_VERSION = "1"
 
     def __init__(self, seed: int = 0) -> None:
+        if isinstance(seed,bool) or not isinstance(seed,int):
+            raise ValueError("seed must be an integer")
         self.seed = seed
         self._rng = random.Random(seed)
         self._counter = 0
@@ -57,6 +60,12 @@ class ChallengeGenerator:
         if difficulty is not None and not 0.0 <= difficulty <= 1.0:
             raise ValueError("difficulty must be within [0, 1]")
 
+        domain = ChallengeDomain(domain)
+        if agent_id is not None and (not isinstance(agent_id,str) or not agent_id.strip()):
+            raise ValueError("agent_id cannot be empty")
+        finite_number(severity,"severity",low=0,high=1)
+        if difficulty is not None:
+            finite_number(difficulty,"difficulty",low=0,high=1)
         self._counter += 1
         rng = self._rng
         difficulty = severity if difficulty is None else difficulty
@@ -106,9 +115,8 @@ class ChallengeGenerator:
             }
             trajectory.append({"phase": phase, "relative_time": phases.index(phase) / 4.0, "phenotype": values})
 
-        # Difficult cases deliberately borrow a subset of signals associated
-        # with a neighboring domain. This creates realistic phenotype overlap
-        # without encoding any operational biological mechanism.
+        # Neighbor and overlap are descriptive metadata, not an applied
+        # cross-domain mixing model.
         neighbor = rng.choice(_DOMAIN_NEIGHBORS[domain]).value
         dominant = sorted(phenotype_dict, key=phenotype_dict.get, reverse=True)[:3]
         secondary = sorted(phenotype_dict, key=phenotype_dict.get, reverse=True)[3:6]
@@ -128,6 +136,9 @@ class ChallengeGenerator:
             confounders.append("partial_observation")
 
         metadata = {
+            "requested_domain": domain.value,
+            "requested_severity": severity,
+            "requested_difficulty": difficulty,
             "generator": "virelion-cardiagent",
             "generator_version": self.VERSION,
             "scenario_version": self.SCENARIO_VERSION,

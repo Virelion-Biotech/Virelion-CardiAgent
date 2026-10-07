@@ -26,7 +26,7 @@ def test_build_report_is_structured_and_complete() -> None:
 
 def test_acceptance_rejects_bad_quality() -> None:
     suite = baseline_suite(seed=123)
-    report = build_report(suite.challenges, suite=suite.name, suite_version=suite.version, seed=suite.seed, min_quality_score=2.0)
+    report = build_report(suite.challenges, suite=suite.name, suite_version=suite.version, seed=suite.seed, min_quality_score=1.0)
     assert not report.acceptance["minimum_quality_score"]
     with pytest.raises(ValueError, match="minimum_quality_score"):
         assert_accepted(report)
@@ -34,8 +34,6 @@ def test_acceptance_rejects_bad_quality() -> None:
 
 def test_evaluate_acceptance_rejects_duplicate_population() -> None:
     suite = baseline_suite(seed=1)
-    metrics = report = build_report(suite.challenges, suite=suite.name, suite_version=suite.version, seed=suite.seed)
-    del metrics
     from cardiagent.calibration import summarize_calibration
     from cardiagent.evaluation import population_metrics
     population = list(suite.challenges)

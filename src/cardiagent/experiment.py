@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from math import sqrt
-from statistics import mean, pstdev
+from statistics import mean, stdev
 from typing import Sequence
 
 from .ml import AgentGeneratorModel
-from .model_comparison import build_matched_ml_population, build_reference_population, compare_populations
+from .model_comparison import (
+    build_matched_ml_population,
+    build_reference_population,
+    compare_populations,
+)
 from .models import ChallengeAgent
-from .statistics import PairedEffect, paired_effect
+from .statistics import PairedEffect, paired_effect, confidence_half_width
+from .serialization import finite_number, positive_integer
 
 
 EXPERIMENT_VERSION = "0.2"
@@ -20,7 +24,7 @@ EXPERIMENT_VERSION = "0.2"
 class MetricSummary:
     mean: float
     std: float
-    ci95_half_width: float
+    ci95_half_width: float | None
     values: tuple[float, ...]
 
     def to_dict(self) -> dict[str, object]:
@@ -48,8 +52,10 @@ def _summary(values: Sequence[float]) -> MetricSummary:
     if not values:
         raise ValueError("At least one observation is required")
     average = mean(values)
-    spread = pstdev(values) if len(values) > 1 else 0.0
-    half_width = 1.96 * spread / sqrt(len(values)) if len(values) > 1 else 0.0
+    for value in values:
+        finite_number(value, "summary value")
+    spread = stdev(values) if len(values) > 1 else 0.0
+    half_width = confidence_half_width(values)
     return MetricSummary(average, spread, half_width, tuple(float(v) for v in values))
 
 
@@ -68,7 +74,13 @@ def run_multi_seed_experiment(
     is independently initialized and trained for each seed. This avoids
     presenting a single lucky initialization as evidence of model superiority.
     """
-    seed_values = tuple(int(seed) for seed in seeds)
+    if any(isinstance(seed, bool) or not isinstance(seed, int) for seed in seeds):
+        raise ValueError("seeds must be integers")
+    seed_values = tuple(seeds)
+    if len(set(seed_values)) != len(seed_values):
+        raise ValueError("Independent experiment seeds must be unique")
+    positive_integer(per_domain, "per_domain")
+    positive_integer(training_epochs, "training_epochs")
     if not seed_values:
         raise ValueError("At least one seed is required")
     if per_domain < 1 or training_epochs < 1:

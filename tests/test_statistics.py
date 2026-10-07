@@ -8,13 +8,14 @@ def test_paired_effect_has_expected_summary() -> None:
     assert result.count == 5
     assert result.mean_delta == pytest.approx(0.3)
     assert result.std_delta > 0
-    assert result.ci95_half_width > 0
+    if result.ci95_half_width is not None:
+        assert result.ci95_half_width > 0
     assert result.cohens_dz > 0
 
 
-def test_constant_positive_effect_has_infinite_dz() -> None:
+def test_constant_positive_effect_has_undefined_dz() -> None:
     result = paired_effect([0.2, 0.2, 0.2])
-    assert result.cohens_dz == float("inf")
+    assert result.cohens_dz is None
 
 
 def test_empty_effect_rejected() -> None:

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-import json
 from pathlib import Path
 from typing import Iterable
 
@@ -12,6 +11,7 @@ from .calibration import CalibrationSummary, summarize_calibration
 from .evaluation import PopulationMetrics, conditional_domain_fidelity, population_metrics
 from .models import ChallengeAgent
 from .quality import assess_population
+from .serialization import finite_number,write_json
 
 
 REPORT_VERSION = "0.3"
@@ -47,6 +47,8 @@ def evaluate_acceptance(
     max_duplicate_rate: float = 0.10,
 ) -> dict[str, bool]:
     """Apply explicit regression gates to a benchmark population."""
+    for name,value in (("min_quality_score",min_quality_score),("min_domain_fidelity",min_domain_fidelity),("max_duplicate_rate",max_duplicate_rate)):
+        finite_number(value,name,low=0,high=1)
     return {
         "minimum_quality_score": quality_score >= min_quality_score,
         "domain_fidelity_threshold": domain_fidelity >= min_domain_fidelity,
@@ -108,5 +110,5 @@ def write_report(report: BenchmarkReport, path: str | Path) -> Path:
     """Write a stable, human-readable JSON report."""
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(json.dumps(report.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_json(report.to_dict(),destination)
     return destination

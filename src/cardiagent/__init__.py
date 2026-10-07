@@ -59,3 +59,5 @@ __all__ = [
     "LiteratureArchetype", "LITERATURE_ARCHETYPES", "archetypes_by_domain", "get_archetype",
     "PathogenClass", "PathogenPhenotype", "PATHOGEN_PHENOTYPES", "pathogen_phenotypes", "get_pathogen_phenotype",
 ]
+
+__version__ = "0.4.0"

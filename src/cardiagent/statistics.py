@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from math import sqrt
-from statistics import mean, pstdev
+from statistics import mean, stdev
+from .serialization import finite_number
 from typing import Sequence
 
 
@@ -15,8 +16,8 @@ class PairedEffect:
     count: int
     mean_delta: float
     std_delta: float
-    ci95_half_width: float
-    cohens_dz: float
+    ci95_half_width: float | None
+    cohens_dz: float | None
     wilcoxon_signed_rank_p: float | None
 
     def to_dict(self) -> dict[str, float | int | None]:
@@ -32,11 +33,11 @@ def paired_effect(values: Sequence[float]) -> PairedEffect:
     """
     if not values:
         raise ValueError("At least one paired observation is required")
-    deltas = [float(value) for value in values]
+    deltas = [finite_number(value, "paired delta") for value in values]
     average = mean(deltas)
-    spread = pstdev(deltas) if len(deltas) > 1 else 0.0
-    ci = 1.96 * spread / sqrt(len(deltas)) if len(deltas) > 1 else 0.0
-    dz = average / spread if spread > 0 else (float("inf") if average > 0 else 0.0)
+    spread = stdev(deltas) if len(deltas) > 1 else 0.0
+    ci = confidence_half_width(deltas)
+    dz = average / spread if spread > 0 else None
 
     p_value: float | None = None
     try:
@@ -58,3 +59,14 @@ def paired_effect(values: Sequence[float]) -> PairedEffect:
         cohens_dz=dz,
         wilcoxon_signed_rank_p=p_value,
     )
+
+
+def confidence_half_width(values):
+    """Student-t interval of the mean; None when not estimable/available."""
+    if len(values) < 2:
+        return None
+    try:
+        from scipy.stats import t
+    except ImportError:
+        return None
+    return float(t.ppf(0.975, len(values) - 1)) * stdev(values) / sqrt(len(values))

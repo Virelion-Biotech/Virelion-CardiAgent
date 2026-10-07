@@ -1,0 +1,31 @@
+name: Held-out generative quality gate
+on:
+  workflow_dispatch:
+jobs:
+  scientific-screen:
+    runs-on: ubuntu-latest
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      CARDIAGENT_VALIDATION_OUTPUT: artifacts/heldout
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e ".[validation]"
+      - run: python validation/colab/validation_colab.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: heldout-validation
+          path: artifacts/heldout
+      - name: Require scientific quality pass
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('artifacts/heldout/scientific_validation_report.json').read_text())
+          assert report['overall']['status'] == 'PASS', 'CVAE is not benchmark-qualified; inspect artifacts'
+          PY

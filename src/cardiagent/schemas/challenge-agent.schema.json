@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Virelion-Biotech/Virelion-CardiAgent/schemas/challenge-agent.schema.json",
+  "title": "Virelion CardiAgent Challenge Instance",
+  "type": "object",
+  "required": ["agent_id", "domain", "version", "seed", "severity", "onset", "persistence", "heterogeneity", "phenotype", "metadata"],
+  "properties": {
+    "agent_id": {"type": "string", "minLength": 1},
+    "domain": {"enum": ["ischemic", "inflammatory", "electrophysiologic", "toxic_injury", "viral_like", "metabolic", "genetic_susceptibility"]},
+    "version": {"type": "string", "minLength": 1},
+    "seed": {"type": "integer"},
+    "severity": {"type": "number", "minimum": 0, "maximum": 1},
+    "onset": {"type": "number", "minimum": 0, "maximum": 1},
+    "persistence": {"type": "number", "minimum": 0, "maximum": 1},
+    "heterogeneity": {"type": "number", "minimum": 0, "maximum": 1},
+    "phenotype": {
+      "type": "object",
+      "required": ["stress", "inflammation", "electrical_instability", "contractile_impairment", "viability_loss", "oxidative_stress", "metabolic_disruption", "remodeling_signal"],
+      "additionalProperties": false,
+      "properties": {
+        "stress": {"type": "number", "minimum": 0, "maximum": 1},
+        "inflammation": {"type": "number", "minimum": 0, "maximum": 1},
+        "electrical_instability": {"type": "number", "minimum": 0, "maximum": 1},
+        "contractile_impairment": {"type": "number", "minimum": 0, "maximum": 1},
+        "viability_loss": {"type": "number", "minimum": 0, "maximum": 1},
+        "oxidative_stress": {"type": "number", "minimum": 0, "maximum": 1},
+        "metabolic_disruption": {"type": "number", "minimum": 0, "maximum": 1},
+        "remodeling_signal": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "metadata": {"type": "object"}
+  },
+  "additionalProperties": false
+}

@@ -13,6 +13,9 @@ usable without ML dependencies.
 from __future__ import annotations
 
 from pathlib import Path
+import os
+import tempfile
+from .serialization import finite_number, positive_integer
 from typing import Iterable, Sequence
 
 from .models import ChallengeAgent, ChallengeDomain, PhenotypeProfile
@@ -39,8 +42,7 @@ def _torch():
         import torch.nn as nn
     except ImportError as exc:
         raise ImportError(
-            "ML generation requires PyTorch. Install with: "
-            "pip install 'virelion-cardiagent[ml]'"
+            "ML generation requires PyTorch. Install with: pip install 'virelion-cardiagent[ml]'"
         ) from exc
     return torch, nn
 
@@ -114,10 +116,10 @@ class _ConditionalVAE:
         condition = self._condition(domain_ids, severity)
         return self.decoder(self.torch.cat([z, condition], dim=1))
 
-    def forward(self, x, domain_ids, severity):
+    def forward(self, x, domain_ids, severity, generator=None):
         mu, logvar = self.encode(x, domain_ids, severity)
         std = self.torch.exp(0.5 * logvar)
-        z = mu + self.torch.randn_like(std) * std
+        z = mu + self.torch.randn(std.shape, generator=generator) * std
         return self.decode(z, domain_ids, severity), mu, logvar
 
 
@@ -134,11 +136,17 @@ class AgentGeneratorModel:
 
     def __init__(self, *, latent_dim: int = LATENT_DIM, seed: int = 0):
         torch, nn = _torch()
-        torch.manual_seed(seed)
+        positive_integer(latent_dim, "latent_dim")
+        if isinstance(seed, bool) or not isinstance(seed, int):
+            raise ValueError("seed must be an integer")
         self.torch = torch
         self.seed = seed
         self.latent_dim = latent_dim
-        self.model = _ConditionalVAE(torch, nn, len(ChallengeDomain), latent_dim)
+        with torch.random.fork_rng(devices=[]):
+            torch.manual_seed(seed)
+            self.model = _ConditionalVAE(torch, nn, len(ChallengeDomain), latent_dim)
+        self._rng = torch.Generator().manual_seed(seed)
+        self._sample_counter = 0
         self.trained = False
         self.training_summary: dict[str, float | int] = {}
 
@@ -156,10 +164,19 @@ class AgentGeneratorModel:
         torch = self.torch
         rows = list(agents)
         if len(rows) < 8:
-            raise ValueError("At least 8 ChallengeAgent examples are required to train the ML generator")
+            raise ValueError(
+                "At least 8 ChallengeAgent examples are required to train the ML generator"
+            )
+        positive_integer(epochs, "epochs")
+        positive_integer(batch_size, "batch_size")
+        finite_number(learning_rate, "learning_rate", low=0)
+        finite_number(beta, "beta", low=0)
+        if learning_rate == 0:
+            raise ValueError("learning_rate must be positive")
         if epochs < 1 or batch_size < 1:
             raise ValueError("epochs and batch_size must be positive")
 
+        self.trained = False
         x = torch.stack([_feature_vector(agent) for agent in rows])
         domains = torch.tensor([_domain_index(agent.domain) for agent in rows], dtype=torch.long)
         severity = torch.tensor([agent.severity for agent in rows], dtype=torch.float32)
@@ -167,14 +184,18 @@ class AgentGeneratorModel:
         last_loss = 0.0
 
         for epoch in range(epochs):
-            order = torch.randperm(len(rows))
+            order = torch.randperm(len(rows), generator=self._rng)
             epoch_loss = 0.0
             for start in range(0, len(rows), batch_size):
-                idx = order[start:start + batch_size]
-                recon, mu, logvar = self.model.forward(x[idx], domains[idx], severity[idx])
+                idx = order[start : start + batch_size]
+                recon, mu, logvar = self.model.forward(
+                    x[idx], domains[idx], severity[idx], generator=self._rng
+                )
                 reconstruction = torch.nn.functional.mse_loss(recon, x[idx])
                 kl = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
                 loss = reconstruction + beta * kl
+                if not torch.isfinite(loss):
+                    raise RuntimeError("ML training produced non-finite loss")
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -208,13 +229,16 @@ class AgentGeneratorModel:
             raise RuntimeError("Train the model with .fit(...) before sampling")
         if not 0.0 <= severity <= 1.0 or not 0.0 <= difficulty <= 1.0:
             raise ValueError("severity and difficulty must be within [0, 1]")
+        positive_integer(count, "count")
+        if not isinstance(agent_id_prefix, str) or not agent_id_prefix.strip():
+            raise ValueError("agent_id_prefix cannot be empty")
         if count < 1:
             raise ValueError("count must be positive")
 
         temperature = 0.65 + 0.95 * difficulty
         domain_id = torch.tensor([_domain_index(domain)] * count, dtype=torch.long)
         severity_tensor = torch.tensor([severity] * count, dtype=torch.float32)
-        z = torch.randn(count, self.latent_dim) * temperature
+        z = torch.randn(count, self.latent_dim, generator=self._rng) * temperature
         with torch.no_grad():
             decoded = self.model.decode(z, domain_id, severity_tensor).clamp(0.0, 1.0)
 
@@ -222,9 +246,14 @@ class AgentGeneratorModel:
         for i, vector in enumerate(decoded.tolist(), start=1):
             phenotype = PhenotypeProfile(**dict(zip(PHENOTYPE_FIELDS, vector[:8])))
             onset, persistence, heterogeneity = vector[8:11]
-            overlap = min(1.0, 0.20 + 0.70 * difficulty + float(torch.rand(1)) * 0.10)
+            overlap = min(
+                1.0, 0.20 + 0.70 * difficulty + float(torch.rand(1, generator=self._rng)) * 0.10
+            )
             neighbor = self._neighbor(domain, difficulty)
             metadata = {
+                "requested_domain": domain.value,
+                "requested_severity": severity,
+                "requested_difficulty": difficulty,
                 "generator": "virelion-cardiagent-ml",
                 "generator_version": self.VERSION,
                 "representation": "phenotype-level",
@@ -240,7 +269,7 @@ class AgentGeneratorModel:
             }
             agents.append(
                 ChallengeAgent(
-                    agent_id=f"{agent_id_prefix}-{self.seed:06d}-{i:05d}",
+                    agent_id=f"{agent_id_prefix}-{self.seed:06d}-{self._sample_counter + i:05d}",
                     domain=domain,
                     version=self.VERSION,
                     seed=self.seed,
@@ -252,18 +281,31 @@ class AgentGeneratorModel:
                     metadata=metadata,
                 )
             )
+        self._sample_counter += count
         return agents
 
     @staticmethod
     def _neighbor(domain: ChallengeDomain, difficulty: float) -> ChallengeDomain:
         neighbors = {
             ChallengeDomain.ISCHEMIC: (ChallengeDomain.METABOLIC, ChallengeDomain.TOXIC_INJURY),
-            ChallengeDomain.INFLAMMATORY: (ChallengeDomain.VIRAL_LIKE, ChallengeDomain.TOXIC_INJURY),
-            ChallengeDomain.ELECTROPHYSIOLOGIC: (ChallengeDomain.GENETIC_SUSCEPTIBILITY, ChallengeDomain.METABOLIC),
+            ChallengeDomain.INFLAMMATORY: (
+                ChallengeDomain.VIRAL_LIKE,
+                ChallengeDomain.TOXIC_INJURY,
+            ),
+            ChallengeDomain.ELECTROPHYSIOLOGIC: (
+                ChallengeDomain.GENETIC_SUSCEPTIBILITY,
+                ChallengeDomain.METABOLIC,
+            ),
             ChallengeDomain.TOXIC_INJURY: (ChallengeDomain.ISCHEMIC, ChallengeDomain.INFLAMMATORY),
             ChallengeDomain.VIRAL_LIKE: (ChallengeDomain.INFLAMMATORY, ChallengeDomain.METABOLIC),
-            ChallengeDomain.METABOLIC: (ChallengeDomain.ISCHEMIC, ChallengeDomain.ELECTROPHYSIOLOGIC),
-            ChallengeDomain.GENETIC_SUSCEPTIBILITY: (ChallengeDomain.ELECTROPHYSIOLOGIC, ChallengeDomain.METABOLIC),
+            ChallengeDomain.METABOLIC: (
+                ChallengeDomain.ISCHEMIC,
+                ChallengeDomain.ELECTROPHYSIOLOGIC,
+            ),
+            ChallengeDomain.GENETIC_SUSCEPTIBILITY: (
+                ChallengeDomain.ELECTROPHYSIOLOGIC,
+                ChallengeDomain.METABOLIC,
+            ),
         }
         options = neighbors[domain]
         return options[1 if difficulty >= 0.5 else 0]
@@ -272,25 +314,49 @@ class AgentGeneratorModel:
         """Save model weights and training metadata."""
         if not self.trained:
             raise RuntimeError("Cannot save an untrained model")
-        self.torch.save(
-            {
-                "version": self.VERSION,
-                "latent_dim": self.latent_dim,
-                "seed": self.seed,
-                "training_summary": self.training_summary,
-                "state_dict": self.model.state_dict(),
-            },
-            str(path),
+        destination = Path(path)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "version": self.VERSION,
+            "checkpoint_format": 1,
+            "latent_dim": self.latent_dim,
+            "seed": self.seed,
+            "training_summary": self.training_summary,
+            "state_dict": self.model.state_dict(),
+            "rng_state": self._rng.get_state(),
+            "sample_counter": self._sample_counter,
+        }
+        fd, temporary = tempfile.mkstemp(
+            prefix="cardiagent-model-", suffix=".pt", dir=destination.parent
         )
+        os.close(fd)
+        try:
+            self.torch.save(payload, temporary)
+            os.replace(temporary, destination)
+        finally:
+            Path(temporary).unlink(missing_ok=True)
 
     @classmethod
     def load(cls, path: str | Path) -> "AgentGeneratorModel":
         """Load a previously trained model."""
         torch, _ = _torch()
-        payload = torch.load(str(path), map_location="cpu", weights_only=False)
-        model = cls(latent_dim=int(payload["latent_dim"]), seed=int(payload.get("seed", 0)))
+        payload = torch.load(str(path), map_location="cpu", weights_only=True)
+        if (
+            not isinstance(payload, dict)
+            or payload.get("version") != cls.VERSION
+            or payload.get("checkpoint_format", 1) != 1
+        ):
+            raise ValueError("Unsupported checkpoint version/format")
+        model = cls(latent_dim=payload["latent_dim"], seed=payload.get("seed", 0))
         model.model.load_state_dict(payload["state_dict"])
         model.training_summary = dict(payload.get("training_summary", {}))
+        if any(not torch.isfinite(p).all() for p in model.model.parameters()):
+            raise ValueError("Checkpoint contains non-finite model weights")
+        if "rng_state" in payload:
+            model._rng.set_state(payload["rng_state"])
+        model._sample_counter = positive_integer(
+            payload.get("sample_counter", 0), "sample_counter", minimum=0
+        )
         model.trained = True
         return model
 

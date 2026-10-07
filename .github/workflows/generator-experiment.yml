@@ -8,6 +8,9 @@ on:
 jobs:
   experiment:
     runs-on: ubuntu-latest
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -15,7 +18,9 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install package and ML dependencies
-        run: python -m pip install -e ".[all]"
+        run: |
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -e ".[test,validation]"
       - name: Run canonical multi-seed experiment
         run: python scripts/run_generator_experiment.py --output artifacts/generator-experiment.json
       - name: Validate artifact structure

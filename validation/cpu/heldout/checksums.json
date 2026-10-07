@@ -1,0 +1,10 @@
+{
+  "scientific_validation_report.json": {
+    "uncompressed_sha256": "7bf0ab61ed19d7430f423173a9779d1ff32ca53ff533458bccf41f3b73ca0d99",
+    "gzip_sha256": "ccd148d679ea68c6245a905c3828b323278dfb951c4cacc5ca474374c553a2a5"
+  },
+  "split_manifest.json": {
+    "uncompressed_sha256": "d87dfa9f5cdd8728da83a7278274ca679afe8fc822443b094fec9169aaae71fc",
+    "gzip_sha256": "c2e660896dc59aedd8e0f8f35e9de065bc0548d48896f2a08f96ec2dc66d3a4c"
+  }
+}
