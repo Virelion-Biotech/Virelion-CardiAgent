@@ -45,3 +45,5 @@ trajectories. Schemas and handoff producers are tested, but this repo does not
 establish a live CardiVex consumer integration. There is no patient reference
 cohort or independent clinical validation. Software checks passing must not be
 interpreted as removal of these gaps or a claim that the product is perfect.
+
+Publication: software repairs and preserved evidence committed to main as `9763a6efc88c4ca078628bc97a0389288b5fb0be`. GitHub CI verifies the published software separately from the failed scientific screen.
