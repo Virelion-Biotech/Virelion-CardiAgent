@@ -1,0 +1,225 @@
+"""Predeclared correlated-source challenge with independent and broken controls."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import platform
+import tempfile
+from pathlib import Path
+
+import numpy as np
+import scipy
+import sklearn
+from scipy.special import ndtr
+from scipy.stats import ks_2samp, spearmanr
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
+
+from cardiagent.conditional import FIELDS
+from cardiagent.joint import ConditionalCopulaGenerator
+from cardiagent.ml import PHENOTYPE_FIELDS
+from cardiagent.models import ChallengeAgent, ChallengeDomain, PhenotypeProfile
+from cardiagent.serialization import read_json, write_json
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def source(conditions, count, seed, prefix):
+    rng = np.random.default_rng(seed)
+    correlation = np.eye(11)
+    for a, b, rho in [(0, 1, 0.85), (3, 4, -0.7), (8, 9, 0.75)]:
+        correlation[a, b] = correlation[b, a] = rho
+    result = []
+    for severity, difficulty in conditions:
+        # Separate source sampler; generator never receives correlation or held-out rows.
+        latent = rng.multivariate_normal(np.zeros(11), correlation, size=count)
+        vectors = 0.1 + 0.25 * severity + 0.15 * difficulty + 0.2 * ndtr(latent)
+        vectors[:, 2] = 0
+        for i, vector in enumerate(vectors):
+            result.append(
+                ChallengeAgent(
+                    agent_id=f"{prefix}-{severity}-{difficulty}-{i}",
+                    domain=ChallengeDomain.ISCHEMIC,
+                    version="synthetic correlated source",
+                    seed=seed,
+                    severity=severity,
+                    onset=float(vector[8]),
+                    persistence=float(vector[9]),
+                    heterogeneity=float(vector[10]),
+                    phenotype=PhenotypeProfile(**dict(zip(PHENOTYPE_FIELDS, vector[:8]))),
+                    metadata={"requested_difficulty": difficulty},
+                )
+            )
+    return result
+
+
+def matrix(rows):
+    return np.array(
+        [
+            [getattr(a.phenotype, f) if f in PHENOTYPE_FIELDS else getattr(a, f) for f in FIELDS]
+            for a in rows
+        ]
+    )
+
+
+def screen(real, generated, training, protocol, seed):
+    ks = max(ks_2samp(real[:, j], generated[:, j]).statistic for j in range(11))
+    variable = np.ptp(real, axis=0) > 0
+    rank_error = float(
+        np.max(
+            abs(
+                spearmanr(real[:, variable]).statistic - spearmanr(generated[:, variable]).statistic
+            )
+        )
+    )
+    x = np.vstack([real, generated])
+    y = np.r_[np.zeros(len(real)), np.ones(len(generated))]
+    train, test = train_test_split(np.arange(len(x)), test_size=0.4, random_state=seed, stratify=y)
+    discriminator = RandomForestClassifier(
+        n_estimators=100, max_depth=6, min_samples_leaf=10, random_state=seed, n_jobs=1
+    )
+    discriminator.fit(x[train], y[train])
+    auc = float(roc_auc_score(y[test], discriminator.predict_proba(x[test])[:, 1]))
+    support = set(map(tuple, training))
+    copy_fraction = sum(tuple(row) in support for row in generated) / len(generated)
+    passed = (
+        ks <= protocol["maximum_KS"]
+        and rank_error <= protocol["maximum_Spearman_error"]
+        and auc <= protocol["maximum_discriminator_AUC"]
+        and copy_fraction <= protocol["maximum_training_exact_copy_fraction"]
+    )
+    return {
+        "maximum_KS": float(ks),
+        "maximum_Spearman_error": rank_error,
+        "discriminator_AUC": auc,
+        "training_exact_copy_fraction": copy_fraction,
+        "passed": bool(passed),
+    }
+
+
+def verify(protocol):
+    count = protocol["observations_per_condition"]
+    training = source(protocol["training_conditions"], count, protocol["training_seed"], "train")
+    reference = source(
+        protocol["heldout_conditions"], count, protocol["reference_seed"], "reference"
+    )
+    independent = source(
+        protocol["heldout_conditions"], count, protocol["reference_seed"] + 1, "independent-control"
+    )
+    assert not {a.agent_id for a in training} & {a.agent_id for a in reference}
+    controls = []
+    checks = []
+    continuations = []
+    training_matrix = matrix(training)
+    with tempfile.TemporaryDirectory() as directory:
+        for seed in protocol["model_seeds"]:
+            model = ConditionalCopulaGenerator(seed=seed, shrinkage=protocol["shrinkage"]).fit(
+                training
+            )
+            for position, (severity, difficulty) in enumerate(protocol["heldout_conditions"]):
+                real = matrix(reference[position * count : (position + 1) * count])
+                control = matrix(independent[position * count : (position + 1) * count])
+                generated = matrix(
+                    model.sample(
+                        domain="ischemic", severity=severity, difficulty=difficulty, count=count
+                    )
+                )
+                check = screen(real, generated, training_matrix, protocol, seed)
+                checks.append(
+                    {"seed": seed, "severity": severity, "difficulty": difficulty, **check}
+                )
+                rng = np.random.default_rng(seed + position)
+                broken = control.copy()
+                for j in range(11):
+                    rng.shuffle(broken[:, j])
+                controls.append(
+                    {
+                        "seed": seed,
+                        "severity": severity,
+                        "difficulty": difficulty,
+                        "independent_reference": screen(
+                            real, control, training_matrix, protocol, seed
+                        ),
+                        "broken_dependence": screen(real, broken, training_matrix, protocol, seed),
+                        "broken_marginals_identical": bool(
+                            np.array_equal(np.sort(control, axis=0), np.sort(broken, axis=0))
+                        ),
+                    }
+                )
+            path = Path(directory) / f"checkpoint-{seed}.json"
+            model.save(path)
+            expected = model.sample(domain="ischemic", severity=0.5, count=5)
+            actual = ConditionalCopulaGenerator.load(path).sample(
+                domain="ischemic", severity=0.5, count=5
+            )
+            continuations.append([v.to_dict() for v in expected] == [v.to_dict() for v in actual])
+    control_ok = all(
+        c["independent_reference"]["passed"]
+        and not c["broken_dependence"]["passed"]
+        and c["broken_marginals_identical"]
+        for c in controls
+    )
+    return {
+        "schema_version": "cardiagent-joint-verification-v1",
+        "passed": all(c["passed"] for c in checks) and control_ok and all(continuations),
+        "model_family": ConditionalCopulaGenerator.VERSION,
+        "protocol": protocol,
+        "fields": list(FIELDS),
+        "training_examples": len(training),
+        "reference_examples": len(reference),
+        "training_reference_ids_disjoint": True,
+        "training_population_sha256": hashlib.sha256(training_matrix.tobytes()).hexdigest(),
+        "reference_population_sha256": hashlib.sha256(matrix(reference).tobytes()).hexdigest(),
+        "checks": checks,
+        "controls": controls,
+        "checkpoint_continuation": continuations,
+        "patient_validated": False,
+        "CVAE_qualified": False,
+        "privacy_guarantee": False,
+        "limitations": [
+            "Synthetic Gaussian dependence only, one challenge domain.",
+            "No patient observations, biological constraints or external utility tested.",
+            "Exact-copy screen is not a membership-inference or differential-privacy guarantee.",
+            "Copula can miss nonlinear/tail dependence and hard physiological constraints.",
+        ],
+        "environment": {
+            "python": platform.python_version(),
+            "numpy": np.__version__,
+            "scipy": scipy.__version__,
+            "sklearn": sklearn.__version__,
+        },
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output", type=Path, default=ROOT / "validation/cpu/joint/results.json")
+    parser.add_argument(
+        "--protocol", type=Path, default=ROOT / "validation/cpu/joint/confirmation_protocol.json"
+    )
+    args = parser.parse_args()
+    protocol_path = args.protocol.resolve()
+    files = [protocol_path, Path(__file__), *sorted((ROOT / "src/cardiagent").glob("*.py"))]
+    before = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
+    report = verify(read_json(protocol_path))
+    if any(
+        hashlib.sha256((ROOT / p).read_bytes()).hexdigest() != digest
+        for p, digest in before.items()
+    ):
+        raise RuntimeError("Source changed during validation")
+    report["source_sha256"] = before
+    write_json(report, args.output)
+    print(
+        {
+            "passed": report["passed"],
+            "screens": len(report["checks"]),
+            "control_pairs": len(report["controls"]),
+        }
+    )
+    return 0 if report["passed"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

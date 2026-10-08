@@ -139,3 +139,33 @@ trained models do not inherit the audit's qualification.
 [Detailed diagnosis and limits](docs/GENERATOR_RECOVERY.md) ·
 [Expanded confirmation](validation/cpu/recovery/expanded/summary.json) ·
 [Unchanged-screen controls](validation/cpu/recovery/summary.json)
+
+## Joint conditional generator (0.6.0)
+
+`ConditionalCopulaGenerator` is a separate CPU model family that learns Gaussian
+rank dependence across all eight phenotype fields plus onset, persistence and
+heterogeneity. It interpolates empirical marginal quantiles and latent correlation
+within each domain's observed condition hull; it rejects extrapolation and unseen
+domains. The marginal quantile model remains available with its original
+independence/exact-stratum limits. The failed CVAE is not relabeled or substituted.
+
+```bash
+python -m pip install -e '.[joint]'
+cardiagent train --model-family copula --input population.json --output joint.json
+cardiagent sample --model-family copula --model joint.json --domain ischemic --severity 0.5 --difficulty 0.5 --count 40 --output samples.json
+python -m pip install -e '.[validation]'
+python scripts/validate_joint_cpu.py
+```
+
+Training requires at least 32 unique rows per observed condition. Generated agents
+remain `quality_status: not_qualified`, `patient_validated: false`; they are
+phenotype proxies, not patient trajectories. Gaussian dependence and interpolation
+are model assumptions, not inferred biological mechanisms or privacy guarantees.
+
+The separate correlated-source confirmation passes 9/9 model screens and 9/9
+independent-reference controls; all 9 dependence-broken controls fail while their
+marginals are preserved. Discriminator AUC is 0.504–0.534 for the joint model.
+This applies to one synthetic domain and held-out within-hull conditions, not
+patients or all cardiac challenge domains. The smaller pilot's failures are
+preserved. See [joint model assumptions and evidence](docs/JOINT_GENERATOR.md)
+and [numerical report](validation/cpu/joint/results.json).

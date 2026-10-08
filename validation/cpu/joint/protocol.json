@@ -1,0 +1,18 @@
+{
+  "schema_version": "cardiagent-joint-verification-v1",
+  "training_seed": 1001,
+  "reference_seed": 2002,
+  "model_seeds": [17, 29, 41],
+  "training_conditions": [[0.2, 0.2], [0.2, 0.8], [0.8, 0.2], [0.8, 0.8]],
+  "heldout_conditions": [[0.35, 0.35], [0.5, 0.5], [0.65, 0.65]],
+  "observations_per_condition": 1024,
+  "shrinkage": 0.02,
+  "maximum_KS": 0.15,
+  "maximum_Spearman_error": 0.12,
+  "maximum_discriminator_AUC": 0.65,
+  "maximum_training_exact_copy_fraction": 0.01,
+  "all_fields": true,
+  "source": "Declared synthetic Gaussian-copula law; no patient data",
+  "controls": ["fresh independent source draws", "permuted feature columns destroy dependence while preserving marginals"],
+  "scope": "Gaussian dependence and within-hull interpolation only; no CVAE qualification or patient realism"
+}

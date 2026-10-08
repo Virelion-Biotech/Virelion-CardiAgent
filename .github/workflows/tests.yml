@@ -68,3 +68,21 @@ jobs:
         with:
           name: quantile-cpu-validation
           path: artifacts/quantile
+  joint-quality:
+    runs-on: ubuntu-latest
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e ".[validation]"
+      - run: python scripts/validate_joint_cpu.py --output artifacts/joint/results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: joint-cpu-validation
+          path: artifacts/joint

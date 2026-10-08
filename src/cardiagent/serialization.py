@@ -29,7 +29,19 @@ def read_json(path):
     def invalid(value):
         raise ValueError(f"Nonstandard JSON number: {value}")
 
-    return json.loads(Path(path).read_text(encoding="utf-8"), parse_constant=invalid)
+    def unique_pairs(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"Duplicate JSON key: {key}")
+            result[key] = value
+        return result
+
+    return json.loads(
+        Path(path).read_text(encoding="utf-8"),
+        parse_constant=invalid,
+        object_pairs_hook=unique_pairs,
+    )
 
 
 def write_json(payload, path):

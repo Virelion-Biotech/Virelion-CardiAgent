@@ -1,0 +1,403 @@
+{
+  "CVAE_qualified": false,
+  "checkpoint_continuation": [
+    true,
+    true,
+    true
+  ],
+  "checks": [
+    {
+      "difficulty": 0.35,
+      "discriminator_AUC": 0.5176032021669605,
+      "maximum_KS": 0.0283203125,
+      "maximum_Spearman_error": 0.07129546365505986,
+      "passed": true,
+      "seed": 17,
+      "severity": 0.35,
+      "training_exact_copy_fraction": 0.0
+    },
+    {
+      "difficulty": 0.5,
+      "discriminator_AUC": 0.5044239876454641,
+      "maximum_KS": 0.0263671875,
+      "maximum_Spearman_error": 0.07836852320554094,
+      "passed": true,
+      "seed": 17,
+      "severity": 0.5,
+      "training_exact_copy_fraction": 0.0
+    },
+    {
+      "difficulty": 0.65,
+      "discriminator_AUC": 0.5097188419336071,
+      "maximum_KS": 0.046142578125,
+      "maximum_Spearman_error": 0.0665096514337861,
+      "passed": true,
+      "seed": 17,
+      "severity": 0.65,
+      "training_exact_copy_fraction": 0.0
+    },
+    {
+      "difficulty": 0.35,
+      "discriminator_AUC": 0.5197762714541239,
+      "maximum_KS": 0.0380859375,
+      "maximum_Spearman_error": 0.07179391433700037,
+      "passed": true,
+      "seed": 29,
+      "severity": 0.35,
+      "training_exact_copy_fraction": 0.0
+    },
+    {
+      "difficulty": 0.5,
+      "discriminator_AUC": 0.5092629220145999,
+      "maximum_KS": 0.034423828125,
+      "maximum_Spearman_error": 0.04625001976732283,
+      "passed": true,
+      "seed": 29,
+      "severity": 0.5,
+      "training_exact_copy_fraction": 0.0
+    },
+    {
+      "difficulty": 0.65,
+      "discriminator_AUC": 0.514490356772236,
+      "maximum_KS": 0.037841796875,
+      "maximum_Spearman_error": 0.04822539926068746,
+      "passed": true,
+      "seed": 29,
+      "severity": 0.65,
+      "training_exact_copy_fraction": 0.0
+    },
+    {
+      "difficulty": 0.35,
+      "discriminator_AUC": 0.5322194583939551,
+      "maximum_KS": 0.03271484375,
+      "maximum_Spearman_error": 0.07005539540764438,
+      "passed": true,
+      "seed": 41,
+      "severity": 0.35,
+      "training_exact_copy_fraction": 0.0
+    },
+    {
+      "difficulty": 0.5,
+      "discriminator_AUC": 0.5269432282855102,
+      "maximum_KS": 0.03125,
+      "maximum_Spearman_error": 0.05647841421014313,
+      "passed": true,
+      "seed": 41,
+      "severity": 0.5,
+      "training_exact_copy_fraction": 0.0
+    },
+    {
+      "difficulty": 0.65,
+      "discriminator_AUC": 0.5340341984637287,
+      "maximum_KS": 0.039794921875,
+      "maximum_Spearman_error": 0.05319513278500037,
+      "passed": true,
+      "seed": 41,
+      "severity": 0.65,
+      "training_exact_copy_fraction": 0.0
+    }
+  ],
+  "controls": [
+    {
+      "broken_dependence": {
+        "discriminator_AUC": 0.8058589434428362,
+        "maximum_KS": 0.0361328125,
+        "maximum_Spearman_error": 0.8347536706591351,
+        "passed": false,
+        "training_exact_copy_fraction": 0.0
+      },
+      "broken_marginals_identical": true,
+      "difficulty": 0.35,
+      "independent_reference": {
+        "discriminator_AUC": 0.5042139068984707,
+        "maximum_KS": 0.0361328125,
+        "maximum_Spearman_error": 0.07339380618390032,
+        "passed": true,
+        "training_exact_copy_fraction": 0.0
+      },
+      "seed": 17,
+      "severity": 0.35
+    },
+    {
+      "broken_dependence": {
+        "discriminator_AUC": 0.8265742460373333,
+        "maximum_KS": 0.02392578125,
+        "maximum_Spearman_error": 0.8293992566355062,
+        "passed": false,
+        "training_exact_copy_fraction": 0.0
+      },
+      "broken_marginals_identical": true,
+      "difficulty": 0.5,
+      "independent_reference": {
+        "discriminator_AUC": 0.4897634058707885,
+        "maximum_KS": 0.02392578125,
+        "maximum_Spearman_error": 0.048539624590460184,
+        "passed": true,
+        "training_exact_copy_fraction": 0.0
+      },
+      "seed": 17,
+      "severity": 0.5
+    },
+    {
+      "broken_dependence": {
+        "discriminator_AUC": 0.8281707107210462,
+        "maximum_KS": 0.0361328125,
+        "maximum_Spearman_error": 0.8720195880129501,
+        "passed": false,
+        "training_exact_copy_fraction": 0.0
+      },
+      "broken_marginals_identical": true,
+      "difficulty": 0.65,
+      "independent_reference": {
+        "discriminator_AUC": 0.4962256237424023,
+        "maximum_KS": 0.0361328125,
+        "maximum_Spearman_error": 0.05272565118450827,
+        "passed": true,
+        "training_exact_copy_fraction": 0.0
+      },
+      "seed": 17,
+      "severity": 0.65
+    },
+    {
+      "broken_dependence": {
+        "discriminator_AUC": 0.8247483314597409,
+        "maximum_KS": 0.0361328125,
+        "maximum_Spearman_error": 0.8200223675639663,
+        "passed": false,
+        "training_exact_copy_fraction": 0.0
+      },
+      "broken_marginals_identical": true,
+      "difficulty": 0.35,
+      "independent_reference": {
+        "discriminator_AUC": 0.5084285587641293,
+        "maximum_KS": 0.0361328125,
+        "maximum_Spearman_error": 0.07339380618390032,
+        "passed": true,
+        "training_exact_copy_fraction": 0.0
+      },
+      "seed": 29,
+      "severity": 0.35
+    },
+    {
+      "broken_dependence": {
+        "discriminator_AUC": 0.8458573492130539,
+        "maximum_KS": 0.02392578125,
+        "maximum_Spearman_error": 0.8500174792377453,
+        "passed": false,
+        "training_exact_copy_fraction": 0.0
+      },
+      "broken_marginals_identical": true,
+      "difficulty": 0.5,
+      "independent_reference": {
+        "discriminator_AUC": 0.49567621044131116,
+        "maximum_KS": 0.02392578125,
+        "maximum_Spearman_error": 0.048539624590460184,
+        "passed": true,
+        "training_exact_copy_fraction": 0.0
+      },
+      "seed": 29,
+      "severity": 0.5
+    },
+    {
+      "broken_dependence": {
+        "discriminator_AUC": 0.8190660942338794,
+        "maximum_KS": 0.0361328125,
+        "maximum_Spearman_error": 0.8244828175095844,
+        "passed": false,
+        "training_exact_copy_fraction": 0.0
+      },
+      "broken_marginals_identical": true,
+      "difficulty": 0.65,
+      "independent_reference": {
+        "discriminator_AUC": 0.5004831112213662,
+        "maximum_KS": 0.0361328125,
+        "maximum_Spearman_error": 0.05272565118450827,
+        "passed": true,
+        "training_exact_copy_fraction": 0.0
+      },
+      "seed": 29,
+      "severity": 0.65
+    },
+    {
+      "broken_dependence": {
+        "discriminator_AUC": 0.8267995986116792,
+        "maximum_KS": 0.0361328125,
+        "maximum_Spearman_error": 0.8342460660652707,
+        "passed": false,
+        "training_exact_copy_fraction": 0.0
+      },
+      "broken_marginals_identical": true,
+      "difficulty": 0.35,
+      "independent_reference": {
+        "discriminator_AUC": 0.5164458956405266,
+        "maximum_KS": 0.0361328125,
+        "maximum_Spearman_error": 0.07339380618390032,
+        "passed": true,
+        "training_exact_copy_fraction": 0.0
+      },
+      "seed": 41,
+      "severity": 0.35
+    },
+    {
+      "broken_dependence": {
+        "discriminator_AUC": 0.8572128840585217,
+        "maximum_KS": 0.02392578125,
+        "maximum_Spearman_error": 0.8136887083072937,
+        "passed": false,
+        "training_exact_copy_fraction": 0.0
+      },
+      "broken_marginals_identical": true,
+      "difficulty": 0.5,
+      "independent_reference": {
+        "discriminator_AUC": 0.4958315360999925,
+        "maximum_KS": 0.02392578125,
+        "maximum_Spearman_error": 0.048539624590460184,
+        "passed": true,
+        "training_exact_copy_fraction": 0.0
+      },
+      "seed": 41,
+      "severity": 0.5
+    },
+    {
+      "broken_dependence": {
+        "discriminator_AUC": 0.849880916995011,
+        "maximum_KS": 0.0361328125,
+        "maximum_Spearman_error": 0.8524341900421196,
+        "passed": false,
+        "training_exact_copy_fraction": 0.0
+      },
+      "broken_marginals_identical": true,
+      "difficulty": 0.65,
+      "independent_reference": {
+        "discriminator_AUC": 0.4978090515003266,
+        "maximum_KS": 0.0361328125,
+        "maximum_Spearman_error": 0.05272565118450827,
+        "passed": true,
+        "training_exact_copy_fraction": 0.0
+      },
+      "seed": 41,
+      "severity": 0.65
+    }
+  ],
+  "environment": {
+    "numpy": "2.3.5",
+    "python": "3.12.14",
+    "scipy": "1.17.0",
+    "sklearn": "1.8.0"
+  },
+  "fields": [
+    "stress",
+    "inflammation",
+    "electrical_instability",
+    "contractile_impairment",
+    "viability_loss",
+    "oxidative_stress",
+    "metabolic_disruption",
+    "remodeling_signal",
+    "onset",
+    "persistence",
+    "heterogeneity"
+  ],
+  "limitations": [
+    "Synthetic Gaussian dependence only, one challenge domain.",
+    "No patient observations, biological constraints or external utility tested.",
+    "Exact-copy screen is not a membership-inference or differential-privacy guarantee.",
+    "Copula can miss nonlinear/tail dependence and hard physiological constraints."
+  ],
+  "model_family": "0.6-conditional-gaussian-rank-copula",
+  "passed": true,
+  "patient_validated": false,
+  "privacy_guarantee": false,
+  "protocol": {
+    "all_fields": true,
+    "controls": [
+      "fresh independent source draws",
+      "permuted feature columns destroy dependence while preserving marginals"
+    ],
+    "heldout_conditions": [
+      [
+        0.35,
+        0.35
+      ],
+      [
+        0.5,
+        0.5
+      ],
+      [
+        0.65,
+        0.65
+      ]
+    ],
+    "maximum_KS": 0.15,
+    "maximum_Spearman_error": 0.12,
+    "maximum_discriminator_AUC": 0.65,
+    "maximum_training_exact_copy_fraction": 0.01,
+    "model_seeds": [
+      17,
+      29,
+      41
+    ],
+    "observations_per_condition": 4096,
+    "protocol_role": "Separately declared larger-sample confirmation with fresh source seeds; unchanged gates",
+    "reference_seed": 4004,
+    "schema_version": "cardiagent-joint-verification-v1",
+    "scope": "Gaussian dependence and within-hull interpolation only; no CVAE qualification or patient realism",
+    "shrinkage": 0.02,
+    "source": "Declared synthetic Gaussian-copula law; no patient data",
+    "training_conditions": [
+      [
+        0.2,
+        0.2
+      ],
+      [
+        0.2,
+        0.8
+      ],
+      [
+        0.8,
+        0.2
+      ],
+      [
+        0.8,
+        0.8
+      ]
+    ],
+    "training_seed": 3003
+  },
+  "reference_examples": 12288,
+  "reference_population_sha256": "1717630a63834f664ce91a701b9641a16e53453b9bfb1ee49b46b303b9ebd006",
+  "schema_version": "cardiagent-joint-verification-v1",
+  "source_sha256": {
+    "scripts/validate_joint_cpu.py": "c822dd2e82802fcf132429f4908c96ef14f26168c093bf825a64e9c67b58dc6f",
+    "src/cardiagent/__init__.py": "bbf22bb0e7c6cc764dff1ad38311777242f3f580729bd63a2998309f79dafa75",
+    "src/cardiagent/adaptive.py": "0de4bfdd76e84b52fec1354f1f0885fae27417e8de5c9ff5b015da9e49b46080",
+    "src/cardiagent/benchmark.py": "0edb8c6a1f63b19b7618f65a0990a9bb08f4b37736be01d72de4ffe447586a39",
+    "src/cardiagent/benchmark_report.py": "d63f239a3525d66ded3eeaee0bd2f42a75839e1cc7575f9c655c9cb072f17a55",
+    "src/cardiagent/benchmark_runner.py": "10e21d479906eace288dfe9799a916985af73f5acb8df9ebbda42f1a3cd28672",
+    "src/cardiagent/calibration.py": "5daf85acc7d6ec6be748fe261b72effbd367170b929e24f42dd60406618856c8",
+    "src/cardiagent/cli.py": "61657c4d189a0ddde4a427b7b5e672597057d543033ef91f1038defa79f19c58",
+    "src/cardiagent/conditional.py": "f1a9349de6b9ee03b9a18f32457907afc0a464588f5ce9c9085f81c9d598ed43",
+    "src/cardiagent/evaluation.py": "08e012a7f584abadb912307e3a500489decf2c14068b1341a0551bba428031ce",
+    "src/cardiagent/experiment.py": "1d1a5cda02e29ed6a2cd4281da03d13e2022b0d271b6a386c4b3e238b380679a",
+    "src/cardiagent/experiment_artifact.py": "eeae33d784f22211502fa4abf4c5effa36819e9d546a7a51f03d9a73d7f6c481",
+    "src/cardiagent/generator.py": "a477cd395bf33489c745f115d793ff7a50a247be13fd16a0756bc972a206264c",
+    "src/cardiagent/handoff.py": "ec478380e5f05be24e782ea40ccd39ea571b880e9c701450a55d299feea00acc",
+    "src/cardiagent/hearttwin_adapter.py": "f70d676e55043ccd5b2dca3d3d489a1b48f382e81bbb57c06f55369c2e172fd9",
+    "src/cardiagent/joint.py": "39155679bb746ae2d9bd35fb54f334d84af81c424d5f4ad0657a78c44d8e62f7",
+    "src/cardiagent/literature.py": "e14b9b0c886edd60197541a72a5fb0885c8656f15ab6a6c7105532eecfb1370a",
+    "src/cardiagent/manifest.py": "4863ce3bd6914379a426f1540f46f76ded6d01f96c184600adca59637be8bfa8",
+    "src/cardiagent/ml.py": "07cd231d568e14a0038b9ae6d79d99dd46a3c13249fdb0320499e99e48eab90c",
+    "src/cardiagent/model_comparison.py": "a87ce92837b1e78153c71994127488aeca4efb0e52d4480be761d6b8ef9dd974",
+    "src/cardiagent/models.py": "36c3c122667f71c2308c875a407b39bc71f9676f0c0303902dc823bab6815db8",
+    "src/cardiagent/pathogens.py": "8e694112cfb69a2c71dc496c78be49f57dd311a94c4736d2c36d4781ad9476c8",
+    "src/cardiagent/quality.py": "ada0eafa037da63cf2c29be07c0472b3b9bdb07f2b4c60c2a67433a554c8dff9",
+    "src/cardiagent/screen_calibration.py": "85b031e9b9c1ec7d69e057b1f858087dcad4114297adafd9322993e1878bf32f",
+    "src/cardiagent/serialization.py": "f5d6cb889408540321524dd4705d87df840def3e66077d40dbe13e4f0654ed0c",
+    "src/cardiagent/statistics.py": "ab217c11d134f5dd8ba5607a3b3c634cb78f3073dcca20efe0c0dc9e09cc58ea",
+    "src/cardiagent/suites.py": "3dc313a9543f61651e798efb9a221ae30c1aa637e36d364ccd7acc39ff5b9000",
+    "validation/cpu/joint/confirmation_protocol.json": "bf26610780b3c83d90e60cfd458844a06bd1779a489dce218571552f0a40064e"
+  },
+  "training_examples": 16384,
+  "training_population_sha256": "8ba48ce9306f1a5c3641c177f24e1d8e23f6f42555513becdb5365586d631eb6",
+  "training_reference_ids_disjoint": true
+}

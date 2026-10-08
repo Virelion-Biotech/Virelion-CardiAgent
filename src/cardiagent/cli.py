@@ -44,7 +44,9 @@ def build_parser():
             item.add_argument("--agent-id")
         if name == "sample":
             item.add_argument("--model", type=Path, required=True)
-            item.add_argument("--model-family", choices=["cvae", "quantile"], default="cvae")
+            item.add_argument(
+                "--model-family", choices=["cvae", "quantile", "copula"], default="cvae"
+            )
     item = sub.add_parser("benchmark")
     item.add_argument("--suite", default="all")
     item.add_argument("--seed", type=int)
@@ -56,7 +58,7 @@ def build_parser():
     item.add_argument("--benchmark-id", default="cardiagent-blind")
     item.add_argument("--seed", type=int, default=0)
     item = sub.add_parser("train")
-    item.add_argument("--model-family", choices=["cvae", "quantile"], default="cvae")
+    item.add_argument("--model-family", choices=["cvae", "quantile", "copula"], default="cvae")
     item.add_argument("--input", type=Path, required=True)
     item.add_argument("--output", type=Path, required=True)
     item.add_argument("--epochs", type=int, default=25)
@@ -73,6 +75,16 @@ def build_parser():
     item.add_argument("--seed", type=int, default=0)
     item.add_argument("--output", type=Path)
     return parser
+
+
+def _joint_model_class():
+    if any(importlib.util.find_spec(name) is None for name in ("numpy", "scipy")):
+        raise RuntimeError(
+            "Copula generator requires optional dependencies; install virelion-cardiagent[joint]"
+        )
+    from .joint import ConditionalCopulaGenerator
+
+    return ConditionalCopulaGenerator
 
 
 def main(argv=None):
@@ -95,15 +107,18 @@ def main(argv=None):
 
                 from .conditional import ConditionalQuantileGenerator
 
-                model_class = (
-                    ConditionalQuantileGenerator
-                    if args.model_family == "quantile"
-                    else AgentGeneratorModel
-                )
+                if args.model_family == "copula":
+                    model_class = _joint_model_class()
+                else:
+                    model_class = (
+                        ConditionalQuantileGenerator
+                        if args.model_family == "quantile"
+                        else AgentGeneratorModel
+                    )
                 items = model_class.load(args.model).sample(
                     domain=args.domain,
                     severity=args.severity,
-                    difficulty=(args.severity if args.model_family == "quantile" else 0.75)
+                    difficulty=(args.severity if args.model_family != "cvae" else 0.75)
                     if args.difficulty is None
                     else args.difficulty,
                     count=args.count,
@@ -163,7 +178,9 @@ def main(argv=None):
 
             from .conditional import ConditionalQuantileGenerator
 
-            if args.model_family == "quantile":
+            if args.model_family == "copula":
+                model = _joint_model_class()(seed=args.seed).fit(_population(args.input))
+            elif args.model_family == "quantile":
                 model = ConditionalQuantileGenerator(seed=args.seed).fit(_population(args.input))
             else:
                 model = AgentGeneratorModel(seed=args.seed).fit(

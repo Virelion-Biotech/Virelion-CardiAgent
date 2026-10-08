@@ -61,4 +61,4 @@ __all__ = [
     "PathogenClass", "PathogenPhenotype", "PATHOGEN_PHENOTYPES", "pathogen_phenotypes", "get_pathogen_phenotype",
 ]
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
