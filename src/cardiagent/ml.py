@@ -132,7 +132,7 @@ class AgentGeneratorModel:
     blinded CardiVex benchmark pipeline unchanged.
     """
 
-    VERSION = "0.3-ml-cvae"
+    VERSION = "0.5-ml-cvae-support"
 
     def __init__(self, *, latent_dim: int = LATENT_DIM, seed: int = 0):
         torch, nn = _torch()
@@ -148,6 +148,8 @@ class AgentGeneratorModel:
         self._rng = torch.Generator().manual_seed(seed)
         self._sample_counter = 0
         self.trained = False
+        self.support_constants = {}
+        self.checkpoint_version = self.VERSION
         self.training_summary: dict[str, float | int] = {}
 
     def fit(
@@ -177,9 +179,30 @@ class AgentGeneratorModel:
             raise ValueError("epochs and batch_size must be positive")
 
         self.trained = False
+        self.checkpoint_version = self.VERSION
         x = torch.stack([_feature_vector(agent) for agent in rows])
         domains = torch.tensor([_domain_index(agent.domain) for agent in rows], dtype=torch.long)
         severity = torch.tensor([agent.severity for agent in rows], dtype=torch.float32)
+        # Exact point masses cannot be represented by a sigmoid decoder.
+        # Learn domain-level constants from training rows only, never from test data.
+        self.support_constants = {}
+        for domain_id in sorted(set(domains.tolist())):
+            domain_rows = [row for row in rows if _domain_index(row.domain) == domain_id]
+            fields = PHENOTYPE_FIELDS + ("onset", "persistence", "heterogeneity")
+            columns = [
+                [
+                    getattr(row.phenotype, field)
+                    if field in PHENOTYPE_FIELDS
+                    else getattr(row, field)
+                    for row in domain_rows
+                ]
+                for field in fields
+            ]
+            constants = [
+                float(column[0]) if all(value == column[0] for value in column) else None
+                for column in columns
+            ]
+            self.support_constants[domain_id] = constants
         optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         last_loss = 0.0
 
@@ -227,6 +250,11 @@ class AgentGeneratorModel:
         torch = self.torch
         if not self.trained:
             raise RuntimeError("Train the model with .fit(...) before sampling")
+        domain = ChallengeDomain(domain)
+        finite_number(severity, "severity", low=0, high=1)
+        finite_number(difficulty, "difficulty", low=0, high=1)
+        if self.support_constants and _domain_index(domain) not in self.support_constants:
+            raise ValueError("Requested domain was not observed during training")
         if not 0.0 <= severity <= 1.0 or not 0.0 <= difficulty <= 1.0:
             raise ValueError("severity and difficulty must be within [0, 1]")
         positive_integer(count, "count")
@@ -241,9 +269,15 @@ class AgentGeneratorModel:
         z = torch.randn(count, self.latent_dim, generator=self._rng) * temperature
         with torch.no_grad():
             decoded = self.model.decode(z, domain_id, severity_tensor).clamp(0.0, 1.0)
+            for column, value in enumerate(self.support_constants.get(_domain_index(domain), [])):
+                if value is not None:
+                    decoded[:, column] = value
 
         agents: list[ChallengeAgent] = []
         for i, vector in enumerate(decoded.tolist(), start=1):
+            for column, value in enumerate(self.support_constants.get(_domain_index(domain), [])):
+                if value is not None:
+                    vector[column] = value  # Preserve source precision, not float32 rounding.
             phenotype = PhenotypeProfile(**dict(zip(PHENOTYPE_FIELDS, vector[:8])))
             onset, persistence, heterogeneity = vector[8:11]
             overlap = min(
@@ -255,7 +289,11 @@ class AgentGeneratorModel:
                 "requested_severity": severity,
                 "requested_difficulty": difficulty,
                 "generator": "virelion-cardiagent-ml",
-                "generator_version": self.VERSION,
+                "generator_version": self.checkpoint_version,
+                "support_mode": "training_domain_constants"
+                if self.support_constants
+                else "legacy_unconstrained",
+                "quality_status": "not_qualified",
                 "representation": "phenotype-level",
                 "model_family": "conditional_variational_autoencoder",
                 "latent_dim": self.latent_dim,
@@ -271,7 +309,7 @@ class AgentGeneratorModel:
                 ChallengeAgent(
                     agent_id=f"{agent_id_prefix}-{self.seed:06d}-{self._sample_counter + i:05d}",
                     domain=domain,
-                    version=self.VERSION,
+                    version=self.checkpoint_version,
                     seed=self.seed,
                     severity=severity,
                     onset=float(onset),
@@ -317,8 +355,9 @@ class AgentGeneratorModel:
         destination = Path(path)
         destination.parent.mkdir(parents=True, exist_ok=True)
         payload = {
-            "version": self.VERSION,
-            "checkpoint_format": 1,
+            "version": self.checkpoint_version,
+            "checkpoint_format": 2,
+            "support_constants": self.support_constants,
             "latent_dim": self.latent_dim,
             "seed": self.seed,
             "training_summary": self.training_summary,
@@ -343,11 +382,32 @@ class AgentGeneratorModel:
         payload = torch.load(str(path), map_location="cpu", weights_only=True)
         if (
             not isinstance(payload, dict)
-            or payload.get("version") != cls.VERSION
-            or payload.get("checkpoint_format", 1) != 1
+            or payload.get("version") not in {cls.VERSION, "0.3-ml-cvae"}
+            or payload.get("checkpoint_format", 1) not in {1, 2}
         ):
             raise ValueError("Unsupported checkpoint version/format")
         model = cls(latent_dim=payload["latent_dim"], seed=payload.get("seed", 0))
+        model.checkpoint_version = payload["version"]
+        constants = payload.get("support_constants", {})
+        if not isinstance(constants, dict):
+            raise ValueError("Invalid support constants")
+        for domain_id, values in constants.items():
+            if (
+                isinstance(domain_id, bool)
+                or not isinstance(domain_id, int)
+                or not 0 <= domain_id < len(ChallengeDomain)
+                or not isinstance(values, list)
+                or len(values) != INPUT_DIM
+            ):
+                raise ValueError("Invalid support constants")
+            for value in values:
+                if value is not None:
+                    finite_number(value, "support constant", low=0, high=1)
+        if payload["version"] == cls.VERSION and payload.get("checkpoint_format") != 2:
+            raise ValueError("Support-aware checkpoint requires format 2")
+        if payload["version"] == cls.VERSION and not constants:
+            raise ValueError("Support-aware checkpoint requires learned constants")
+        model.support_constants = constants
         model.model.load_state_dict(payload["state_dict"])
         model.training_summary = dict(payload.get("training_summary", {}))
         if any(not torch.isfinite(p).all() for p in model.model.parameters()):

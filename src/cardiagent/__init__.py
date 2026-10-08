@@ -16,6 +16,7 @@ from .evaluation import (
 )
 from .experiment import MetricSummary, MultiSeedExperiment, run_multi_seed_experiment
 from .experiment_artifact import ARTIFACT_VERSION, experiment_fingerprint, run_and_write_experiment
+from .conditional import ConditionalQuantileGenerator
 from .generator import ChallengeGenerator
 from .handoff import BlindCardiVexHandoff, CardiVexHandoff, create_blind_handoff, create_handoff
 from .literature import LITERATURE_ARCHETYPES, LiteratureArchetype, archetypes_by_domain, get_archetype
@@ -43,7 +44,7 @@ __all__ = [
     "ChallengeAgent", "ChallengeDomain", "PhenotypeProfile", "ChallengeGenerator",
     "CardiVexHandoff", "BlindCardiVexHandoff", "create_handoff", "create_blind_handoff",
     "ChallengeManifest", "build_manifest", "BlindCase", "BlindBenchmark", "build_blind_benchmark", "audit_blind_presentation",
-    "AgentGeneratorModel", "train_agent_model", "generate_ml_agents", "generate_ml_benchmark",
+    "ConditionalQuantileGenerator", "AgentGeneratorModel", "train_agent_model", "generate_ml_agents", "generate_ml_benchmark",
     "GeneratorComparison", "compare_populations", "build_reference_population", "build_matched_ml_population",
     "MetricSummary", "MultiSeedExperiment", "run_multi_seed_experiment",
     "ARTIFACT_VERSION", "experiment_fingerprint", "run_and_write_experiment",
@@ -60,4 +61,4 @@ __all__ = [
     "PathogenClass", "PathogenPhenotype", "PATHOGEN_PHENOTYPES", "pathogen_phenotypes", "get_pathogen_phenotype",
 ]
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"

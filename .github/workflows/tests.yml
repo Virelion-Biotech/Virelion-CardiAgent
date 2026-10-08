@@ -50,3 +50,21 @@ jobs:
       - run: /tmp/agent-wheel/bin/cardiagent doctor
       - run: /tmp/agent-wheel/bin/cardiagent benchmark --output-dir /tmp/agent-benchmarks
       - run: /tmp/agent-wheel/bin/python -c "from importlib.resources import files; assert files('cardiagent').joinpath('schemas/challenge-agent.schema.json').is_file()"
+  quantile-quality:
+    runs-on: ubuntu-latest
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e ".[validation]"
+      - run: python scripts/validate_quantile_cpu.py --output artifacts/quantile
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quantile-cpu-validation
+          path: artifacts/quantile

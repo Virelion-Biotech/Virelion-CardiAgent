@@ -58,3 +58,58 @@ def test_ml_random_state_isolated_and_checkpoint_resumes_sequence(tmp_path):
 def test_ml_invalid_training_controls_rejected(field, value):
     with pytest.raises(ValueError):
         AgentGeneratorModel(seed=7).fit(_training_set(), **{field: value})
+
+
+def test_cvae_preserves_learned_constant_support_after_reload(tmp_path):
+    training = _training_set()
+    model = AgentGeneratorModel(seed=3).fit(training, epochs=2)
+    generated = model.sample(domain=ChallengeDomain.ISCHEMIC, count=20)
+    assert all(a.phenotype.inflammation == 0 for a in generated)
+    assert all(a.phenotype.electrical_instability == 0 for a in generated)
+    path = tmp_path / "support.pt"
+    model.save(path)
+    restored = AgentGeneratorModel.load(path)
+    assert restored.support_constants == model.support_constants
+    assert all(
+        a.phenotype.inflammation == 0
+        for a in restored.sample(domain=ChallengeDomain.ISCHEMIC, count=10)
+    )
+
+
+def test_new_cvae_checkpoint_missing_support_rejected(tmp_path):
+    path = tmp_path / "corrupt.pt"
+    model = AgentGeneratorModel(seed=3).fit(_training_set(), epochs=1)
+    model.save(path)
+    payload = torch.load(path, weights_only=True)
+    payload.pop("support_constants")
+    torch.save(payload, path)
+    with pytest.raises(ValueError, match="requires learned"):
+        AgentGeneratorModel.load(path)
+
+
+def test_legacy_checkpoint_remains_explicitly_legacy(tmp_path):
+    model = AgentGeneratorModel(seed=3).fit(_training_set(), epochs=1)
+    path = tmp_path / "legacy.pt"
+    model.save(path)
+    payload = torch.load(path, weights_only=True)
+    payload["version"] = "0.3-ml-cvae"
+    payload["checkpoint_format"] = 1
+    payload.pop("support_constants")
+    torch.save(payload, path)
+    restored = AgentGeneratorModel.load(path)
+    item = restored.sample(domain=ChallengeDomain.ISCHEMIC)[0]
+    assert item.version == "0.3-ml-cvae"
+    assert item.metadata["support_mode"] == "legacy_unconstrained"
+
+
+def test_constant_support_preserves_original_numeric_precision():
+    from dataclasses import replace
+
+    training = [
+        replace(a, phenotype=replace(a.phenotype, inflammation=0.7)) for a in _training_set()
+    ]
+    model = AgentGeneratorModel(seed=3).fit(training, epochs=1)
+    assert all(
+        a.phenotype.inflammation == 0.7
+        for a in model.sample(domain=ChallengeDomain.ISCHEMIC, count=10)
+    )

@@ -17,6 +17,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import math
 import platform
 import subprocess
 import sys
@@ -74,6 +75,8 @@ SCREEN = {
 
 
 def canonical(obj):
+    if isinstance(obj, float) and not math.isfinite(obj):
+        return None
     if hasattr(obj, "value"):
         return obj.value
     if isinstance(obj, dict):
@@ -81,9 +84,9 @@ def canonical(obj):
     if isinstance(obj, (list, tuple)):
         return [canonical(v) for v in obj]
     if isinstance(obj, np.ndarray):
-        return obj.tolist()
+        return canonical(obj.tolist())
     if isinstance(obj, np.generic):
-        return obj.item()
+        return canonical(obj.item())
     if hasattr(obj, "__dict__"):
         return canonical(vars(obj))
     return obj
@@ -1032,7 +1035,7 @@ def main():
     report["elapsed_seconds"] = time.time() - start
 
     with open(OUT / "scientific_validation_report.json", "w") as handle:
-        json.dump(canonical(report), handle, indent=2)
+        json.dump(canonical(report), handle, indent=2, allow_nan=False)
 
     write_condition_csv(report)
     write_markdown(report)

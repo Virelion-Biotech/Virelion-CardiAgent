@@ -12,3 +12,5 @@ htmlcov/
 artifacts/
 outputs/
 validation_colab_results_v2/
+validation/cpu/recovery/expanded/quantile-seed-*.json
+.coverage.*

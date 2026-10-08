@@ -1,0 +1,16 @@
+{
+  "protocol_id": "conditional-quantile-cpu-confirmation-20261008",
+  "declared_before_execution": true,
+  "reference_data_seed": 20261010,
+  "conditions": "seven domains x severities 0.1 through 0.9; difficulty equals severity",
+  "training_per_condition": 512,
+  "heldout_per_condition": 512,
+  "generated_per_condition": 512,
+  "model_seeds": [17, 29, 41],
+  "model_family": "conditional_marginal_quantile",
+  "hyperparameter_selection": "none; fixed algorithm; no test-driven selection",
+  "screen_thresholds": "unchanged validation/colab/validation_colab.py SCREEN",
+  "source_scope": "independent synthetic reference draws; not patients",
+  "scope_limit": "observed exact domain/severity/difficulty strata only; conditional feature independence assumed",
+  "old_result_policy": "historical and nine-sample diagnostic failures remain unchanged; expanded pass must not be substituted for the old protocol"
+}

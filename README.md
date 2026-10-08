@@ -92,7 +92,7 @@ Checkpoint loading uses PyTorch's restricted `weights_only=True` loader.
 JSON and checkpoint outputs use atomic replacement per file; a public/truth
 pair is not a two-file transaction.
 
-## Validation limits
+## Historical CVAE validation limits (0.4.0)
 
 The CPU held-out CVAE protocol **failed** its predeclared quality checks.
 Reproducibility passed, but all 21 model/domain and 189 condition screens failed;
@@ -111,3 +111,31 @@ Statistical summaries use sample standard deviations. Student-t confidence
 intervals require SciPy and at least two observations; unavailable intervals and
 undefined standardized effects are JSON null, never infinity. Repeated seeds
 are rejected as independent experiment replicates.
+
+## Generator recovery in 0.5.0
+
+The massive CVAE failures were reproduced and diagnosed on CPU. The old
+nine-observation condition gate also rejects independent reference-source draws:
+its `KS <= 0.2` threshold has a 98.95% single-feature false rejection probability
+under an identical continuous-distribution null. Original failed evidence and
+thresholds are retained.
+
+A **separate conditional marginal quantile model** passes all 21 domain and
+189 condition screens in a predeclared fresh confirmation with 512 held-out
+observations per condition. It needs no PyTorch or GPU. The support-aware CVAE
+improves but remains unqualified.
+
+```bash
+cardiagent train --model-family quantile --input population.json --output quantile.json
+cardiagent sample --model-family quantile --model quantile.json --domain ischemic --severity 0.5 --difficulty 0.5 --count 40 --output samples.json
+python scripts/validate_quantile_cpu.py
+```
+
+The quantile model assumes conditional feature independence, supports only
+observed exact domain/severity/difficulty strata, and produces static profiles.
+It does not establish patient realism or biological mechanisms. Arbitrary newly
+trained models do not inherit the audit's qualification.
+
+[Detailed diagnosis and limits](docs/GENERATOR_RECOVERY.md) ·
+[Expanded confirmation](validation/cpu/recovery/expanded/summary.json) ·
+[Unchanged-screen controls](validation/cpu/recovery/summary.json)

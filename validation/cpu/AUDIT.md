@@ -47,3 +47,7 @@ cohort or independent clinical validation. Software checks passing must not be
 interpreted as removal of these gaps or a claim that the product is perfect.
 
 Publication: software repairs and preserved evidence committed to main as `9763a6efc88c4ca078628bc97a0389288b5fb0be`. GitHub CI verifies the published software separately from the failed scientific screen.
+
+## Follow-up in 0.5.0
+
+This file preserves the original failed CVAE audit. The later support repair, independent reference-control diagnosis, and separately declared expanded CPU quantile confirmation are documented in [GENERATOR_RECOVERY.md](../../docs/GENERATOR_RECOVERY.md). The new quantile result does not retroactively qualify this original CVAE run.
