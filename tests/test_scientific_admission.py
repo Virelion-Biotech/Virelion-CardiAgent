@@ -1,11 +1,9 @@
 from dataclasses import replace
 import pytest
-import numpy as np
 from cardiagent.generator import ChallengeGenerator
 from cardiagent.models import ChallengeDomain
 from cardiagent.handoff import create_handoff, create_blind_handoff
 from cardiagent.benchmark import build_blind_benchmark
-from cardiagent.corruptions import corrupt_observations
 
 
 def test_cvae_cannot_enter_full_or_blind_benchmark_handoff():
@@ -26,6 +24,9 @@ def test_cvae_cannot_enter_full_or_blind_benchmark_handoff():
 
 
 def test_corruptions_act_on_values_and_preserve_truth():
+    np = pytest.importorskip("numpy")
+    from cardiagent.corruptions import corrupt_observations
+
     x = np.arange(12, dtype=float).reshape(4, 3)
     result = corrupt_observations(x, kind="masking", fraction=0.5, seed=7)
     assert result["changed_mask"].sum() == 6
