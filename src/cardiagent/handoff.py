@@ -56,6 +56,9 @@ class BlindCardiVexHandoff:
 
 def create_handoff(challenge: ChallengeAgent) -> CardiVexHandoff:
     """Create the full downstream envelope for trusted evaluation."""
+    from .scientific_gate import require_admissible_generator
+
+    require_admissible_generator([challenge])
     observables = (
         "stress",
         "inflammation",
@@ -80,6 +83,9 @@ def create_blind_handoff(
     generator's domain-coded agent ID. This prevents accidental label leakage
     through identifiers such as ``CA-inflammatory-...``.
     """
+    from .scientific_gate import require_admissible_generator
+
+    require_admissible_generator([challenge])
     presentation = _presentation(challenge)
     violations = audit_blind_presentation(
         {"case_id": case_id or opaque_case_id(challenge), **presentation}

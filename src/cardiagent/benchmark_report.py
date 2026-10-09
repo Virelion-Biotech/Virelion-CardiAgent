@@ -11,7 +11,7 @@ from .calibration import CalibrationSummary, summarize_calibration
 from .evaluation import PopulationMetrics, conditional_domain_fidelity, population_metrics
 from .models import ChallengeAgent
 from .quality import assess_population
-from .serialization import finite_number,write_json
+from .serialization import finite_number, write_json
 
 
 REPORT_VERSION = "0.3"
@@ -47,8 +47,12 @@ def evaluate_acceptance(
     max_duplicate_rate: float = 0.10,
 ) -> dict[str, bool]:
     """Apply explicit regression gates to a benchmark population."""
-    for name,value in (("min_quality_score",min_quality_score),("min_domain_fidelity",min_domain_fidelity),("max_duplicate_rate",max_duplicate_rate)):
-        finite_number(value,name,low=0,high=1)
+    for name, value in (
+        ("min_quality_score", min_quality_score),
+        ("min_domain_fidelity", min_domain_fidelity),
+        ("max_duplicate_rate", max_duplicate_rate),
+    ):
+        finite_number(value, name, low=0, high=1)
     return {
         "minimum_quality_score": quality_score >= min_quality_score,
         "domain_fidelity_threshold": domain_fidelity >= min_domain_fidelity,
@@ -70,6 +74,9 @@ def build_report(
 ) -> BenchmarkReport:
     """Build a deterministic report for an already materialized suite."""
     items = list(challenges)
+    from .scientific_gate import require_admissible_generator
+
+    require_admissible_generator(items)
     if not items:
         raise ValueError("At least one challenge is required")
     metrics: PopulationMetrics = population_metrics(items)
@@ -110,5 +117,5 @@ def write_report(report: BenchmarkReport, path: str | Path) -> Path:
     """Write a stable, human-readable JSON report."""
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    write_json(report.to_dict(),destination)
+    write_json(report.to_dict(), destination)
     return destination

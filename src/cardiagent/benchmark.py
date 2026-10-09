@@ -155,6 +155,9 @@ def build_blind_benchmark(
     deterministic and only affects case order, making benchmark runs auditable.
     """
     items = list(challenges)
+    from .scientific_gate import require_admissible_generator
+
+    require_admissible_generator(items)
     if not isinstance(benchmark_id, str) or not benchmark_id.strip():
         raise ValueError("benchmark_id must be non-empty")
     if len({c.agent_id for c in items}) != len(items):
