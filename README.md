@@ -2,6 +2,21 @@
 
 CardiAgent is a Python framework for generating reproducible, phenotype-level cardiac challenge cases for computational evaluation.
 
+
+<!-- VALIDATION_PRODUCT_STATUS:BEGIN -->
+## Validation and product completion status
+
+**Reviewed 2026-10-14; implementation base `984347b63a84`.** **Status: Synthetic generator verification; patient realism unqualified.** This is an evidence-backed scope assessment, not a percentage-complete estimate or a declaration that the product is finished.
+
+| Area | Current evidence / remaining gate |
+|---|---|
+| Software / operational checks | Automated test sources and CI definitions are present; this documentation audit does not report a new algorithm/data-validation run. |
+| Scientific or domain evidence | The failed CVAE remains failed. The newer joint conditional generator passes 9/9 model and 9/9 reference-control screens on one correlated synthetic domain, while all 9 dependence-broken controls fail; discriminator AUC is 0.504–0.534. This does not qualify patient trajectories or all domains. |
+| Remaining for the declared product scope | Qualify joint dependence and interpolation across independent empirical domains; retain extrapolation guards and explicit quality status; implement/qualify temporal and partial-observation behavior where required; run live producer/consumer integrations and independent blinded challenge evaluation. |
+
+Evidence and limits: [repository report](docs/JOINT_GENERATOR.md). The [organization status index](https://github.com/Virelion-Biotech/Virelion-HeartTwin/blob/main/docs/STACK_VALIDATION_STATUS.md) separates software, numerical, data-readiness and empirical qualification. Code/schema execution or a completed download is not a substitute for endpoint-specific validation.
+<!-- VALIDATION_PRODUCT_STATUS:END -->
+
 ## What it contains
 
 A `ChallengeAgent` can represent:
