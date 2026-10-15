@@ -1,0 +1,70 @@
+{
+  "environment_sha256": "26aa4484123d55fc74fe9658153bf885c2086c9e02a504a23bcb9bf2c7c517e4",
+  "fitness": "FIT for software/numerical controls; learned biological challenge validation BLOCKED.",
+  "handler": "numerical",
+  "jobs": {
+    "Virelion-CardiAgent": [
+      [
+        "scripts/validate_quantile_cpu.py",
+        [
+          "--output",
+          "OUTPUT"
+        ]
+      ],
+      [
+        "scripts/validate_joint_cpu.py",
+        [
+          "--output",
+          "OUTPUT"
+        ]
+      ]
+    ]
+  },
+  "launcher_sha256": {
+    "runtime.py": "42099bbb908333a480c11eca9f0586759d57162a1c11b977067a9696c45d0985",
+    "training.py": "c63aee5893f194932f786c5054bd5ff5938bde40a69328d43fd39fb8b0faf112",
+    "worker.py": "76a8b3ddbe6411bea07d353948f7bed3a708ddd3dd46624e6569c377b3eb88b3"
+  },
+  "limits": "No matched multimodal reference cohort and frozen CVAE qualification. Generated controls are not independent biology.",
+  "name": "17_CardiAgent_Controls",
+  "repo_paths": {
+    "Virelion-CardiAgent": "/content/17_CardiAgent_Controls_v1/Virelion-CardiAgent"
+  },
+  "repos": {
+    "Virelion-CardiAgent": "984347b63a84201aa5d9a4489412d5fb4cbaace6"
+  },
+  "requirements": [
+    "numba==0.61.2",
+    "llvmlite==0.44.0",
+    "numpy==2.2.6",
+    "scipy==1.15.3",
+    "pandas==2.2.3",
+    "scikit-learn==1.6.1",
+    "pydantic==2.11.7",
+    "pyyaml==6.0.2",
+    "requests==2.32.4",
+    "matplotlib==3.10.1",
+    "seaborn==0.13.2",
+    "click==8.1.8",
+    "jinja2==3.1.6",
+    "opencv-python-headless==4.12.0.88",
+    "tifffile==2025.6.11",
+    "pillow==11.3.0",
+    "defusedxml==0.7.1",
+    "openpyxl==3.1.5",
+    "meshio==5.3.5",
+    "nibabel==5.3.2",
+    "pydicom==3.0.1",
+    "arviz==0.21.0",
+    "xarray==2025.3.1",
+    "wfdb==4.2.0",
+    "jsonschema==4.24.0"
+  ],
+  "run_root": "/content/drive/MyDrive/HeartTwinValidation/17_CardiAgent_Controls_v1",
+  "scope": "Native quantile and joint-domain analytical/synthetic calibration controls.",
+  "session_seconds": 8100,
+  "source_archive_sha256": {
+    "Virelion-CardiAgent": "766422835f24e390b2a7c966f823876fe7befd0f4eb42e60b8bda8bbb4668074"
+  },
+  "title": "Synthetic generator and joint calibration controls"
+}
