@@ -18,7 +18,7 @@
     "joint_broken_controls_rejected": 9,
     "joint_maximum_auc_difference": 1.676176172826782e-05,
     "joint_KS_and_Spearman_identical": true,
-    "joint_population_hashes_differ": "Python/environment serialization differences; original and replay retained separately; no claim of byte-identical joint replay."
+    "joint_population_hashes_differ": "Raw numerical population bytes differ across dependency environments; cause not isolated. Original and replay retained separately; no claim of byte-identical joint replay."
   },
   "limitations": [
     "Analytical/synthetic controls only; no empirical biology or patient cohort.",
