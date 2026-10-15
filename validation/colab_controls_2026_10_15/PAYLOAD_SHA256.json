@@ -1,0 +1,13 @@
+{
+  "17_CardiAgent_Controls_v1_results.zip": "c75b4acec441ac17b53f8037e8c7af2c376dfa661cad177d9c52f6f5e6a81f91",
+  "REVIEW.json": "65a408349b9130e71161f89ea1a75e36c5b25dd98a8d4246562d6fbfb4fb1b68",
+  "inspection/ARTIFACT_HASHES.json": "b2c97c1a2d917c4d8cc247ba9f7e774aeba1d698f4d6fe29156093969f2f60c6",
+  "inspection/RUN_STATUS.json": "514e57c56f65b0a5705b033441bb6806281e3ce2e6169ef2ab963aa358063a93",
+  "inspection/protocol.json": "a4f732d935ad794a5b1091f8088fb0fdfd524548a69ef51ff20df6ed200e273f",
+  "inspection/results/Virelion-CardiAgent-validate_joint_cpu.json": "3cbd2d2ca65e3b45483e70e36a79858b3d06ff2eb8343a8401cc5a31bc0803fc",
+  "inspection/results/Virelion-CardiAgent-validate_quantile_cpu.json/summary.json": "6efa6ff3ca60122b594d73eba39f3df9df76b9f07288099d0fe698082ebfda4c",
+  "inspection/source_snapshots.json": "fc0346f724251e1af865dea9bf50e3920589a6d09c96940b840df6f6dc0d006d",
+  "local_replay/joint.json": "e21e197bc8e17c5d6294c1c3510450a1982b0d4046142174507d8941178ee9ac",
+  "local_replay/quantile_summary.json": "47fc0cb079748e9da63c5e8a5190592de5a6e71d170f77063337eb9e0b71441f",
+  "local_replay/tests.log": "903efee1f257ab5be51539e7f863b82d45b1304768640777ad68196ec524484e"
+}

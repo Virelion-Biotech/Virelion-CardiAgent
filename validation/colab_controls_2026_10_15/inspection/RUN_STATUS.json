@@ -1,0 +1,12 @@
+{
+  "error": null,
+  "input_receipts": {},
+  "protocol_sha256": "d5ebee26ee097a47bb3904d1ce4ad1c89bfc784e8ae449c7f2309374f00cfe45",
+  "scientific_validation": "NOT_ESTABLISHED_BY_EXECUTION",
+  "scope": "Native quantile and joint-domain analytical/synthetic calibration controls.",
+  "seconds_this_session": 181.72234568700003,
+  "source_pins": {
+    "Virelion-CardiAgent": "984347b63a84201aa5d9a4489412d5fb4cbaace6"
+  },
+  "status": "NUMERICAL_ONLY"
+}

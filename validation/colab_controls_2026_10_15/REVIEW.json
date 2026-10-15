@@ -1,0 +1,30 @@
+{
+  "uploaded_status": "NUMERICAL_ONLY",
+  "artifact_hashes_verified": 26,
+  "pinned_source_files_verified": 102,
+  "source_commit": "984347b63a84201aa5d9a4489412d5fb4cbaace6",
+  "biological_validation": "BLOCKED",
+  "algorithm_changes": false,
+  "local_tests": {
+    "passed": 102,
+    "skipped": 6,
+    "note": "Optional torch-dependent tests skipped locally; hosted CPU-ML job required before merge."
+  },
+  "replay": {
+    "quantile_summary_equal_except_environment_runtime": true,
+    "all_three_quantile_models_byte_identical": true,
+    "joint_model_checks_passed": 9,
+    "joint_independent_controls_passed": 9,
+    "joint_broken_controls_rejected": 9,
+    "joint_maximum_auc_difference": 1.676176172826782e-05,
+    "joint_KS_and_Spearman_identical": true,
+    "joint_population_hashes_differ": "Python/environment serialization differences; original and replay retained separately; no claim of byte-identical joint replay."
+  },
+  "limitations": [
+    "Analytical/synthetic controls only; no empirical biology or patient cohort.",
+    "Quantile marginal independence does not establish joint realism.",
+    "One correlated Gaussian source cannot establish arbitrary tail/nonlinear dependence.",
+    "Near-chance discriminator AUC and loose KS gates are screens, not equivalence or realism proofs.",
+    "Broken controls are intentional negative controls; historical CVAE failure remains unchanged."
+  ]
+}
