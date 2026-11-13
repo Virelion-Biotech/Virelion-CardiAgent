@@ -36,7 +36,7 @@ jobs:
           print("artifact validated", payload["fingerprint"])
           PY
       - name: Upload experiment artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cardiagent-generator-experiment
           path: artifacts/generator-experiment.json
